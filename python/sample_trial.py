@@ -10,28 +10,87 @@ import random
 import mjx
 import mjx.agents
 
+from mjx.action import Action
+from mjx.const import ActionType
+from mjx.env import MjxEnv
+from mjx.observation import Observation
+from mjx.visualizer.selector import Selector
+
 from server import convert_log
 from client.agent import CustomAgentBase
 
 
 # CustomAgentBase を継承して，
 # custom_act()を編集して麻雀AIを実装してください．
+
+
 class MyAgent(CustomAgentBase):
     def __init__(self):
         super().__init__()
 
-    def custom_act(self, obs: mjx.Observation) -> mjx.Action:
-        """盤面情報と取れる行動を受け取って，行動を決定して返す関数．参加者が各自で実装．
+    def act(self, obs: mjx.Observation) -> mjx.Action:
+        hand = obs.MjxLargeV0().current_hand(obs)
+        target = obs.MjxLargeV0().target_tile(obs)
+        riichi = obs.MjxLargeV0().under_riichis(obs)
+        
+        print(riichi)
+        
 
-        Args:
-            obs (mjx.Observation): 盤面情報と取れる行動(obs.legal_actions())
+        legal_actions = obs.legal_actions()
+        if len(legal_actions) == 1:
+            return legal_actions[0]
 
-        Returns:
-            mjx.Action: 実際に取る行動
+        # if it can win, just win
+        win_actions = [a for a in legal_actions if a.type() in [ActionType.TSUMO, ActionType.RON]]
+        if len(win_actions) >= 1:
+            assert len(win_actions) == 1
+            return win_actions[0]
+
+        # if it can declare riichi, just declar riichi
+        riichi_actions = [a for a in legal_actions if a.type() == ActionType.RIICHI]
+        if len(riichi_actions) >= 1:
+            assert len(riichi_actions) == 1
+            return riichi_actions[0]
+
+        steal_actions = [
+            a for a in legal_actions
+            if a.type() in [ActionType.CHI, ActionType.PON, ActionType, ActionType.OPEN_KAN]
+        ]
+        if len(steal_actions) >= 1:
+            pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
+            return pass_action
         """
-        # ランダムに取れる行動をする
-        return random.choice(obs.legal_actions())
+        if len(steal_actions) >= 1:
+            return random.choice(steal_actions)
+        """
 
+        added_kan_actions = [
+            a for a in legal_actions if a.type() in [ActionType.ADDED_KAN] 
+        ]
+        if len(added_kan_actions) >= 1:
+            pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
+            return pass_action
+
+        closed_kan_actions = [
+            a for a in legal_actions if a.type() in [ActionType.CLOSED_KAN]
+        ]
+        if len(closed_kan_actions) >= 1:
+            assert len(closed_kan_actions) == 1
+            return closed_kan_actions[0]
+
+        # discard an effective tile randomly
+        legal_discards = [
+            a for a in legal_actions if a.type() in [ActionType.DISCARD, ActionType.TSUMOGIRI]
+        ]
+        effective_discard_types = obs.curr_hand().effective_discard_types()
+        effective_discards = [
+            a for a in legal_discards if a.tile().type() in effective_discard_types
+        ]
+        if len(effective_discards) > 0:
+            return random.choice(effective_discards)
+
+        # if no effective tile exists, discard randomly
+        return random.choice(legal_discards)
 
 def save_log(obs_dict, env, logs):
     logdir = "logs"
@@ -84,8 +143,7 @@ if __name__ == "__main__":
     env_ = mjx.MjxEnv()
     obs_dict = env_.reset()
 
-    my_id = ""
-    first_counter = 0
+    my_id = "player_0"
     result_rank = ""
 
     logs = convert_log.ConvertLog()
@@ -96,9 +154,6 @@ if __name__ == "__main__":
         while not env_.done():
             actions = {}
             for player_id, obs in obs_dict.items():
-                if first_counter == 0:
-                    my_id = player_id
-                    first_counter += 1
                 actions[player_id] = agents[player_names_to_idx[player_id]].act(obs)
             obs_dict = env_.step(actions)
             if len(obs_dict.keys())==4:
