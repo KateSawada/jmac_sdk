@@ -84,17 +84,40 @@ if __name__ == "__main__":
     env_ = mjx.MjxEnv()
     obs_dict = env_.reset()
 
+    my_id = ""
+    first_counter = 0
+    result_rank = ""
+
     logs = convert_log.ConvertLog()
     for _ in range(n_games):
+        env_ = mjx.MjxEnv()
+        obs_dict = env_.reset()
+        first_counter = 0
         while not env_.done():
             actions = {}
             for player_id, obs in obs_dict.items():
+                if first_counter == 0:
+                    my_id = player_id
+                    first_counter += 1
                 actions[player_id] = agents[player_names_to_idx[player_id]].act(obs)
             obs_dict = env_.step(actions)
             if len(obs_dict.keys())==4:
                 logs.add_log(obs_dict)
         returns = env_.rewards()
+        if env_.rewards()[my_id]==90:
+            result_rank = result_rank+"1"
+        elif env_.rewards()[my_id]==45:
+            result_rank = result_rank+"2"
+        elif env_.rewards()[my_id]==0:
+            result_rank = result_rank+"3"
+        elif env_.rewards()[my_id]==-135:
+            result_rank = result_rank+"4"
+        else:
+            result_rank = result_rank+"?"
+
         if logging:
             save_log(obs_dict, env_, logs)
+
+    print("rank: "+result_rank)
     print("game has ended")
 
