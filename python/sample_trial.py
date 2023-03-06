@@ -605,9 +605,8 @@ class MyAgent(CustomAgentBase):
                     return pon_actions[0]
             elif count_toitsu>=2:
                 for a in toitsu_feat:
-                    if a in yakuhai or self.action_mode=="yakuhai_furo":
-                        if self.remaining_tiles[0][a] != 0:
-                            return pon_actions[0]
+                    if (a in yakuhai and self.remaining_tiles[0][a] != 0) or self.action_mode=="yakuhai_furo":
+                       return pon_actions[0]
 
             pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
             return pass_action
@@ -685,6 +684,58 @@ class MyAgent(CustomAgentBase):
             return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,self.remaining_tiles_num)
         else:
             return discard_effective(legal_discards,doras,self.remaining_tiles)
+    
+class MenzenAgent(CustomAgentBase):
+    def __init__(self) -> None:
+        super().__init__()
+
+    def act(self, observation: Observation) -> Action:
+        legal_actions = observation.legal_actions()
+        if len(legal_actions) == 1:
+            return legal_actions[0]
+
+        # if it can win, just win
+        win_actions = [a for a in legal_actions if a.type() in [ActionType.TSUMO, ActionType.RON]]
+        if len(win_actions) >= 1:
+            assert len(win_actions) == 1
+            return win_actions[0]
+
+        # if it can declare riichi, just declar riichi
+        riichi_actions = [a for a in legal_actions if a.type() == ActionType.RIICHI]
+        if len(riichi_actions) >= 1:
+            assert len(riichi_actions) == 1
+            return riichi_actions[0]
+
+        # if it can apply chi/pon/open-kan, choose randomly
+        steal_actions = [
+            a
+            for a in legal_actions
+            if a.type() in [ActionType.CHI, ActionType.PON, ActionType, ActionType.OPEN_KAN]
+        ]
+        if len(steal_actions) >= 1:
+            pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
+            return pass_action
+
+        # if it can apply closed-kan/added-kan, choose randomly
+        kan_actions = [
+            a for a in legal_actions if a.type() in [ActionType.CLOSED_KAN, ActionType.ADDED_KAN]
+        ]
+        if len(kan_actions) >= 1:
+            return random.choice(kan_actions)
+
+        # discard an effective tile randomly
+        legal_discards = [
+            a for a in legal_actions if a.type() in [ActionType.DISCARD, ActionType.TSUMOGIRI]
+        ]
+        effective_discard_types = observation.curr_hand().effective_discard_types()
+        effective_discards = [
+            a for a in legal_discards if a.tile().type() in effective_discard_types
+        ]
+        if len(effective_discards) > 0:
+            return random.choice(effective_discards)
+
+        # if no effective tile exists, discard randomly
+        return random.choice(legal_discards)
 
 def save_log(obs_dict, env, logs):
     logdir = "logs"
