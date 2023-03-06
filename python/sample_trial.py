@@ -29,8 +29,9 @@ from client.agent import CustomAgentBase
 class MyAgent(CustomAgentBase):
     def __init__(self):
         super().__init__()
-        self.remining_tiles = [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],[1,1,1]]
+        self.remaining_tiles = [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],[1,1,1]]
         self.action_mode = "menzen"
+        self.remaining_tiles_num = 70
 
     def act(self, obs: mjx.Observation) -> mjx.Action:
         def check_suzi(hai):
@@ -89,12 +90,13 @@ class MyAgent(CustomAgentBase):
             elif hai==26:
                 return [23]
             
-        def discard_in_riichi(who,discards,hand_discards,dealer,doras) -> mjx.Action:
+        def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles) -> mjx.Action:
             danger_point = {a:0 for a in range(34)}
 
             danger_list_1 =[1 for _ in range(35)]
             danger_list_2 =[1 for _ in range(35)]
             danger_list_3 =[1 for _ in range(35)]
+            adjust_danger_list =[1 for _ in range(34)]
 
             for dora in doras:
                 danger_list_1[dora]+=0.5
@@ -110,9 +112,9 @@ class MyAgent(CustomAgentBase):
                         discard_list_1[j] = 1
             for i in range(34):
                 if discard_list_1[i]==1: # 下家が捨てている牌
-                    danger_list_1[j] = 0 # 牌の危険度を下げる(安全牌)
-                    if j not in zihai:
-                        for suzi in check_suzi(j):
+                    danger_list_1[i] = 0 # 牌の危険度を下げる(安全牌)
+                    if i not in zihai:
+                        for suzi in check_suzi(i):
                             if suzi in yaotyu:
                                 danger_list_1[suzi] /= 4 # 牌の危険度を下げる(スジandヤオ九牌)
                             else:
@@ -129,9 +131,9 @@ class MyAgent(CustomAgentBase):
                         discard_list_2[j] = 1
             for i in range(34):
                 if discard_list_2[i]==1: # 対面が捨てている牌
-                    danger_list_2[j] = 0 # 牌の危険度を下げる(安全牌)
-                    if j not in zihai:
-                        for suzi in check_suzi(j):
+                    danger_list_2[i] = 0 # 牌の危険度を下げる(安全牌)
+                    if i not in zihai:
+                        for suzi in check_suzi(i):
                             if suzi in yaotyu:
                                 danger_list_2[suzi] /= 4 # 牌の危険度を下げる(スジandヤオ九牌)
                             else:
@@ -148,15 +150,25 @@ class MyAgent(CustomAgentBase):
                         discard_list_3[j] = 1
             for i in range(34):
                 if discard_list_3[i]==1: # 上家が捨てている牌
-                    danger_list_3[j] = 0 # 牌の危険度を下げる(安全牌)
-                    if j not in zihai:
-                        for suzi in check_suzi(j):
+                    danger_list_3[i] = 0 # 牌の危険度を下げる(安全牌)
+                    if i not in zihai:
+                        for suzi in check_suzi(i):
                             if suzi in yaotyu:
                                 danger_list_3[suzi] /= 4 # 牌の危険度を下げる(スジandヤオ九牌)
                             else:
                                 danger_list_3[suzi] /= 2 # 牌の危険度を下げる(スジ)
             for i in range(27,34):
                 danger_list_3[i] /= 2 # 字牌の危険度を一律下げる
+
+            for i in range(34):
+                if (discard_list_1[i]==1 and discard_list_2[i]==1 and discard_list_3[i]==1):
+                    adjust_danger_list[i]=0 # 完全安牌
+            
+            for i in range(27,34):
+                if remaining_tiles[0][i] == 1:
+                    adjust_danger_list[i] = 0.1
+                elif remaining_tiles[0][i] == 0:
+                    adjust_danger_list[i] = 0
             
             if dealer==1:
                 danger_list_1[34] *= 1.5
@@ -165,14 +177,13 @@ class MyAgent(CustomAgentBase):
             elif dealer==3:
                 danger_list_3[34] *= 1.5
 
-            danger_sum = [x*danger_list_1[34]+y*danger_list_2[34]+z*danger_list_3[34] for (x,y,z) in zip(danger_list_1[:34],danger_list_2[:34],danger_list_3[:34])]
+            danger_sum = [(x*danger_list_1[34]+y*danger_list_2[34]+z*danger_list_3[34])*w for (x,y,z,w) in zip(danger_list_1[:34],danger_list_2[:34],danger_list_3[:34],adjust_danger_list)]
             for i in range(34):
                 danger_point[i] = danger_sum[i]
             
             danger_min = 1000000000
             danger_min_action = hand_discards[0]
             for a in hand_discards:
-                print(str(a.tile().type())+": "+str(danger_point[a.tile().type()]))
                 if danger_point[a.tile().type()]<danger_min:
                     danger_min = danger_point[a.tile().type()]
                     danger_min_action = a
@@ -186,8 +197,10 @@ class MyAgent(CustomAgentBase):
         riichi = obs.MjxLargeV0().under_riichis(obs)
         discarded_tiles = obs.MjxLargeV0().discarded_tiles(obs)
         discarded_from_fand = obs.MjxLargeV0().discarded_from_hand(obs)
+        opend_tiles = obs.MjxLargeV0().opened_tiles(obs)
         ignored_tiles = obs.MjxLargeV0().ignored_tiles(obs)
         dealer = obs.MjxLargeV0().dealer(obs)
+        round = obs.MjxLargeV0().round(obs)
         doras = obs.doras()
         dealer_num = -1
 
@@ -195,6 +208,7 @@ class MyAgent(CustomAgentBase):
         yaotyu = [0,8,9,17,18,26,27,28,29,30,31,32,33]
         zihai = [27,28,29,30,31,32,33]
 
+        yakuhai = [31,32,33]
         for a in dealer:
             if a[0]==1:
                 dealer_num=0
@@ -204,13 +218,27 @@ class MyAgent(CustomAgentBase):
                 dealer_num=2
             elif a[3]==1:
                 dealer_num=3
+        if dealer_num==0:
+            yakuhai.append(27)
+        elif dealer_num==1:
+            yakuhai.append(30)
+        elif dealer_num==2:
+            yakuhai.append(29)
+        elif dealer_num==3:
+            yakuhai.append(28)
         
+        if round[3][0]==1:
+            if not 28 in yakuhai:
+                yakuhai.append(28)
+        else:
+            if not 27 in yakuhai:
+                yakuhai.append(27)
 
         if not (1 in discarded_tiles[0] or 1 in discarded_tiles[3] or 1 in discarded_tiles[6] or 1 in discarded_tiles[9]):
-            self.remining_tiles = [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],[1,1,1]]
+            self.remaining_tiles = [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],[1,1,1]]
         
 
-        self.remining_tiles = [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],[1,1,1]]
+        self.remaining_tiles = [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],[1,1,1]]
         for dora in doras:
             opened_dora = 0
             if not dora in [0,9,18,27,31]:
@@ -225,7 +253,7 @@ class MyAgent(CustomAgentBase):
                 opened_dora = 31
             elif dora==31:
                 opened_dora = 33   
-            self.remining_tiles[0][opened_dora] -= 1
+            self.remaining_tiles[0][opened_dora] -= 1
 
         check_red_dora = [0,0,0]
         if hand[4][0]==1:
@@ -234,58 +262,65 @@ class MyAgent(CustomAgentBase):
             check_red_dora[1]=1
         elif hand[6][0]==1:
             check_red_dora[2]=1
-        self.remining_tiles = [self.remining_tiles[0], [x-y for (x,y) in zip(self.remining_tiles[1],check_red_dora)]]
+        self.remaining_tiles = [self.remaining_tiles[0], [x-y for (x,y) in zip(self.remaining_tiles[1],check_red_dora)]]
         for i in range(4):
-            self.remining_tiles = [[x-y for (x,y) in zip(self.remining_tiles[0],hand[i])],self.remining_tiles[1]]
+            self.remaining_tiles = [[x-y for (x,y) in zip(self.remaining_tiles[0],hand[i])],self.remaining_tiles[1]]
+
+        self.remaining_tiles_num = 70
         for e in obs.events():
                 if e.type() == EventType.DISCARD or e.type() == EventType.TSUMOGIRI:
-                    self.remining_tiles[0][e.tile().type()] -= 1
+                    self.remaining_tiles_num -= 1
+                    self.remaining_tiles[0][e.tile().type()] -= 1
                     if e.tile().is_red() and e.tile().type() == 4:
-                        self.remining_tiles[1][0]=0
+                        self.remaining_tiles[1][0]=0
                     elif e.tile().is_red() and e.tile().type() == 13:
-                        self.remining_tiles[1][1]=0
+                        self.remaining_tiles[1][1]=0
                     elif e.tile().is_red() and e.tile().type() == 22:
-                        self.remining_tiles[1][2]=0
+                        self.remaining_tiles[1][2]=0
 
                 elif e.type() in [
                     EventType.CHI,
                     EventType.PON,
-                    EventType.OPEN_KAN,
-                ]:
+                    EventType.OPEN_KAN]:
+                    if e.type() != EventType.OPEN_KAN:
+                        self.remaining_tiles_num += 1
                     for t in e.open().tiles():
-                        self.remining_tiles[0][t.type()] -= 1
+                        self.remaining_tiles[0][t.type()] -= 1
                         if t.is_red() and t.type() == 4:
-                            self.remining_tiles[1][0]=0
+                            self.remaining_tiles[1][0]=0
                         elif t.is_red() and t.type() == 13:
-                            self.remining_tiles[1][1]=0
+                            self.remaining_tiles[1][1]=0
                         elif t.is_red() and t.type() == 22:
-                            self.remining_tiles[1][2]=0
-                    self.remining_tiles[0][e.open().last_tile().type()] += 1
+                            self.remaining_tiles[1][2]=0
+                    self.remaining_tiles[0][e.open().last_tile().type()] += 1
                 
-                elif e.type() in [
-                    EventType.CLOSED_KAN,
-                ]:
+                elif e.type() in [EventType.CLOSED_KAN]:
+                    self.remaining_tiles_num -= 1
                     for t in e.open().tiles():
-                        self.remining_tiles[0][t.type()] -= 1
+                        self.remaining_tiles[0][t.type()] -= 1
                         if t.is_red() and t.type() == 4:
-                            self.remining_tiles[1][0]=0
+                            self.remaining_tiles[1][0]=0
                         elif t.is_red() and t.type() == 13:
-                            self.remining_tiles[1][1]=0
+                            self.remaining_tiles[1][1]=0
                         elif t.is_red() and t.type() == 22:
-                            self.remining_tiles[1][2]=0
+                            self.remaining_tiles[1][2]=0
 
                 
                 elif e.type() == EventType.ADDED_KAN:
+                    self.remaining_tiles_num -= 1
                     t = e.open().last_tile()
-                    self.remining_tiles[0][t.type()] -= 1
+                    self.remaining_tiles[0][t.type()] -= 1
                     if t.is_red() and t.type() == 4:
-                        self.remining_tiles[1][0]=0
+                        self.remaining_tiles[1][0]=0
                     elif t.is_red() and t.type() == 13:
-                        self.remining_tiles[1][1]=0
+                        self.remaining_tiles[1][1]=0
                     elif t.is_red() and t.type() == 22:
-                        self.remining_tiles[1][2]=0
+                        self.remaining_tiles[1][2]=0
         
 
+        print(self.remaining_tiles)
+
+        self.action_mode = "menzen"
         legal_actions = obs.legal_actions()
         kyusyu_actions = [a for a in legal_actions if a.type() == ActionType.ABORTIVE_DRAW_NINE_TERMINALS]
         if len(kyusyu_actions) >= 1:
@@ -294,16 +329,7 @@ class MyAgent(CustomAgentBase):
 
         if len(legal_actions) == 1:
             return legal_actions[0]
-
-        if self.action_mode == "kyusyu":
-            legal_discards = [
-            a for a in legal_actions if a.type() in [ActionType.DISCARD, ActionType.TSUMOGIRI]
-            ]
-            for a in legal_discards:
-                if a.tile().type() in tyutyan:
-                    return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras)
-
-
+        
         # if it can win, just win
         win_actions = [a for a in legal_actions if a.type() in [ActionType.TSUMO, ActionType.RON]]
         if len(win_actions) >= 1:
@@ -313,13 +339,112 @@ class MyAgent(CustomAgentBase):
         # if it can declare riichi, just declar riichi
         riichi_actions = [a for a in legal_actions if a.type() == ActionType.RIICHI]
         if len(riichi_actions) >= 1:
-            assert len(riichi_actions) == 1
             return riichi_actions[0]
+
+        count_kyusyu = 0
+        for i in [0,8,9,]:
+            if hand[0][i]==1:
+                count_kyusyu += 1
+        if count_kyusyu>=9:
+            self.action_mode = "kyusyu"
+            for i in yaotyu:
+                if self.remaining_tiles[0][i]==0 and hand[0][i]==0:
+                    self.action_mode = "menzen"
+
+        count_furo = 0
+        count_furo_list = [0 for _ in range(34)]
+        for i in range(34):
+            for j in range(4):
+                if opend_tiles[j][i]==1:
+                    count_furo_list[i]+=1
+        for i in count_furo_list:
+            count_furo += i
+        if count_furo>0:
+            self.action_mode = "furo"
+            for i in yakuhai:
+                if count_furo_list[i]>=3:
+                    self.action_mode = "yakuhai_furo"
+
+        print("mode: "+self.action_mode)
+
+        if self.action_mode == "kyusyu":
+            legal_discards = [
+            a for a in legal_actions if a.type() in [ActionType.DISCARD, ActionType.TSUMOGIRI]
+            ]
+            tyutyan_discards = []
+            tyutyan_dora_discards = []
+            for a in legal_discards:
+                if a.tile().type() in tyutyan:
+                    tyutyan_discards.append(a)
+                    if a.tile().type() in doras or a.tile().is_red():
+                        tyutyan_dora_discards.append(a)
+            if len(tyutyan_dora_discards)>0:
+                tyutyan_discards = tyutyan_dora_discards
+                    
+            if len(tyutyan_discards)>0:
+               return discard_in_riichi(riichi,discarded_tiles,tyutyan_discards,dealer_num,doras,self.remaining_tiles)
+            else:
+                effective_discard_types = obs.curr_hand().effective_discard_types()
+                effective_discards = [
+                    a for a in legal_discards if a.tile().type() in effective_discard_types
+                ]
+                if len(effective_discards) > 0:
+                    if len(effective_discards) > 1:
+                        removed_list = []
+                        for a in effective_discards:
+                            if a.tile().type() in doras or a.tile().is_red():
+                                removed_list.append(a)
+                        if len(removed_list)<=0:
+                            removed_list = effective_discards
+                        return discard_in_riichi(riichi,discarded_tiles,removed_list,dealer_num,doras,self.remaining_tiles)
+                    else:
+                        return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles)
+                    #return random.choice(effective_discards)
+
+                # if no effective tile exists, discard randomly
+                return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles)
+                #return random.choice(legal_discards)
+
+        
+        pon_actions = [a for a in legal_actions if a.type() == ActionType.PON]
+        if len(pon_actions) >= 1:
+            count_toitsu = 0
+            toitsu_feat = []
+            for i in range(34):
+               if hand[1][i]==1 and hand[2][i]==0:
+                count_toitsu += 1
+                toitsu_feat.append(i)
+            if count_toitsu==1:
+                if toitsu_feat[0] in yakuhai:
+                    return pon_actions[0]
+            elif count_toitsu>=2:
+                for a in toitsu_feat:
+                    if a in yakuhai or self.action_mode=="yakuhai_furo":
+                        if self.remaining_tiles[0][a] != 0:
+                            return pon_actions[0]
+
+            pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
+            return pass_action
+
+        
+        chi_actions = [a for a in legal_actions if a.type() == ActionType.CHI]
+        if len(chi_actions) >= 1:
+            for a in chi_actions:
+                print(a.open().tiles_from_hand()[0].type())
+                print(a.open().tiles_from_hand()[1].type())
+                print(a.open().last_tile().type())
+                print(type(a.open().tiles_from_hand()))
+            if self.action_mode=="yakuhai_furo":
+                return chi_actions[0]
+            else:
+                pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
+                return pass_action
 
         steal_actions = [
             a for a in legal_actions
-            if a.type() in [ActionType.CHI, ActionType.PON, ActionType, ActionType.OPEN_KAN]
+            if a.type() in [ActionType.CHI, ActionType.PON, ActionType.OPEN_KAN]
         ]
+        
         if len(steal_actions) >= 1:
             pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
             return pass_action
@@ -339,7 +464,6 @@ class MyAgent(CustomAgentBase):
             a for a in legal_actions if a.type() in [ActionType.CLOSED_KAN]
         ]
         if len(closed_kan_actions) >= 1:
-            assert len(closed_kan_actions) == 1
             return closed_kan_actions[0]
 
         # discard an effective tile randomly
@@ -354,14 +478,14 @@ class MyAgent(CustomAgentBase):
         if len(effective_discards) > 0:
             if len(effective_discards) > 1:
                 for a in effective_discards:
-                    if a.tile().type() in doras:
+                    if a.tile().type() in doras or a.tile().is_red():
                         effective_discards.remove(a)
 
-            return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras)
+            return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles)
             #return random.choice(effective_discards)
 
         # if no effective tile exists, discard randomly
-        return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras)
+        return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles)
         #return random.choice(legal_discards)
 
 
