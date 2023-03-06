@@ -90,7 +90,7 @@ class MyAgent(CustomAgentBase):
             elif hai==26:
                 return [23]
             
-        def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles) -> mjx.Action:
+        def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,remaining_tile_num) -> mjx.Action:
             danger_point = {a:0 for a in range(34)}
 
             danger_list_1 =[1 for _ in range(35)]
@@ -105,6 +105,12 @@ class MyAgent(CustomAgentBase):
 
             if who[1][0]==1: # 下家リーチ
                 danger_list_1[34] = 8
+                if remaining_tile_num > 35:
+                    for i in range(27,34):
+                        danger_list_1[i] *= 1.5
+            else:
+                for i in range(27,34):
+                    danger_list_1[i] /= 2 # 字牌の危険度を一律下げる
             discard_list_1 = [0 for _ in range(34)]
             for i in range(3,6): # 下家の捨て牌
                 for j in range(34): # 牌をすべて探索
@@ -119,11 +125,15 @@ class MyAgent(CustomAgentBase):
                                 danger_list_1[suzi] /= 4 # 牌の危険度を下げる(スジandヤオ九牌)
                             else:
                                 danger_list_1[suzi] /= 2 # 牌の危険度を下げる(スジ)
-            for i in range(27,34):
-                danger_list_1[i] /= 2 # 字牌の危険度を一律下げる
 
             if who[2][0]==1: # 対面リーチ
                 danger_list_2[34] = 8
+                if remaining_tile_num > 35:
+                    for i in range(27,34):
+                        danger_list_2[i] *= 1.5
+            else:
+                for i in range(27,34):
+                    danger_list_2[i] /= 2 # 字牌の危険度を一律下げる
             discard_list_2 = [0 for _ in range(34)]
             for i in range(6,9): # 対面の捨て牌
                 for j in range(34): # 牌をすべて探索
@@ -138,11 +148,15 @@ class MyAgent(CustomAgentBase):
                                 danger_list_2[suzi] /= 4 # 牌の危険度を下げる(スジandヤオ九牌)
                             else:
                                 danger_list_2[suzi] /= 2 # 牌の危険度を下げる(スジ)
-            for i in range(27,34):
-                danger_list_2[i] /= 2 # 字牌の危険度を一律下げる
 
             if who[3][0]==1: # 上家リーチ
                 danger_list_3[34] = 8
+                if remaining_tile_num > 35:
+                    for i in range(27,34):
+                        danger_list_3[i] *= 1.5
+            else:
+                for i in range(27,34):
+                    danger_list_3[i] /= 2 # 字牌の危険度を一律下げる
             discard_list_3 = [0 for _ in range(34)]
             for i in range(9,12): # 上家の捨て牌
                 for j in range(34): # 牌をすべて探索
@@ -157,8 +171,6 @@ class MyAgent(CustomAgentBase):
                                 danger_list_3[suzi] /= 4 # 牌の危険度を下げる(スジandヤオ九牌)
                             else:
                                 danger_list_3[suzi] /= 2 # 牌の危険度を下げる(スジ)
-            for i in range(27,34):
-                danger_list_3[i] /= 2 # 字牌の危険度を一律下げる
 
             for i in range(34):
                 if (discard_list_1[i]==1 and discard_list_2[i]==1 and discard_list_3[i]==1):
@@ -171,11 +183,11 @@ class MyAgent(CustomAgentBase):
                     adjust_danger_list[i] = 0
             
             if dealer==1:
-                danger_list_1[34] *= 1.5
+                danger_list_1[34] *= 1.3
             elif dealer==2:
-                danger_list_2[34] *= 1.5
+                danger_list_2[34] *= 1.3
             elif dealer==3:
-                danger_list_3[34] *= 1.5
+                danger_list_3[34] *= 1.3
 
             danger_sum = [(x*danger_list_1[34]+y*danger_list_2[34]+z*danger_list_3[34])*w for (x,y,z,w) in zip(danger_list_1[:34],danger_list_2[:34],danger_list_3[:34],adjust_danger_list)]
             for i in range(34):
@@ -200,6 +212,7 @@ class MyAgent(CustomAgentBase):
         opend_tiles = obs.MjxLargeV0().opened_tiles(obs)
         ignored_tiles = obs.MjxLargeV0().ignored_tiles(obs)
         dealer = obs.MjxLargeV0().dealer(obs)
+        ranking = obs.MjxLargeV0().rankings(obs)
         round = obs.MjxLargeV0().round(obs)
         doras = obs.doras()
         dealer_num = -1
@@ -320,8 +333,10 @@ class MyAgent(CustomAgentBase):
         legal_actions = obs.legal_actions()
         kyusyu_actions = [a for a in legal_actions if a.type() == ActionType.ABORTIVE_DRAW_NINE_TERMINALS]
         if len(kyusyu_actions) >= 1:
-            assert len(kyusyu_actions) == 1
-            self.action_mode = "kyusyu"
+            if ranking[2][0]==1:
+                return kyusyu_actions[0]
+            else:
+                self.action_mode = "kyusyu"
 
         if len(legal_actions) == 1:
             return legal_actions[0]
@@ -376,7 +391,7 @@ class MyAgent(CustomAgentBase):
                 tyutyan_discards = tyutyan_dora_discards
                     
             if len(tyutyan_discards)>0:
-               return discard_in_riichi(riichi,discarded_tiles,tyutyan_discards,dealer_num,doras,self.remaining_tiles)
+               return discard_in_riichi(riichi,discarded_tiles,tyutyan_discards,dealer_num,doras,self.remaining_tiles,self.remaining_tiles_num)
             else:
                 effective_discard_types = obs.curr_hand().effective_discard_types()
                 effective_discards = [
@@ -390,13 +405,13 @@ class MyAgent(CustomAgentBase):
                                 removed_list.append(a)
                         if len(removed_list)<=0:
                             removed_list = effective_discards
-                        return discard_in_riichi(riichi,discarded_tiles,removed_list,dealer_num,doras,self.remaining_tiles)
+                        return discard_in_riichi(riichi,discarded_tiles,removed_list,dealer_num,doras,self.remaining_tiles,self.remaining_tiles_num)
                     else:
-                        return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles)
+                        return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,self.remaining_tiles_num)
                     #return random.choice(effective_discards)
 
                 # if no effective tile exists, discard randomly
-                return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles)
+                return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,self.remaining_tiles_num)
                 #return random.choice(legal_discards)
 
         
@@ -462,10 +477,6 @@ class MyAgent(CustomAgentBase):
             else:
                 pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
                 return pass_action
-        """
-        if len(steal_actions) >= 1:
-            return random.choice(steal_actions)
-        """
 
         added_kan_actions = [
             a for a in legal_actions if a.type() in [ActionType.ADDED_KAN] 
@@ -495,12 +506,11 @@ class MyAgent(CustomAgentBase):
                     if a.tile().type() in doras or a.tile().is_red():
                         effective_discards.remove(a)
 
-            return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles)
+            return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,self.remaining_tiles_num)
             #return random.choice(effective_discards)
 
         # if no effective tile exists, discard randomly
-        return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles)
-        #return random.choice(legal_discards)
+        return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,self.remaining_tiles_num)
 
 
 def save_log(obs_dict, env, logs):
