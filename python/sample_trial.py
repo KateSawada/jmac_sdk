@@ -304,7 +304,6 @@ class MyAgent(CustomAgentBase):
                             self.remaining_tiles[1][1]=0
                         elif t.is_red() and t.type() == 22:
                             self.remaining_tiles[1][2]=0
-
                 
                 elif e.type() == EventType.ADDED_KAN:
                     self.remaining_tiles_num -= 1
@@ -316,9 +315,6 @@ class MyAgent(CustomAgentBase):
                         self.remaining_tiles[1][1]=0
                     elif t.is_red() and t.type() == 22:
                         self.remaining_tiles[1][2]=0
-        
-
-        print(self.remaining_tiles)
 
         self.action_mode = "menzen"
         legal_actions = obs.legal_actions()
@@ -364,8 +360,6 @@ class MyAgent(CustomAgentBase):
             for i in yakuhai:
                 if count_furo_list[i]>=3:
                     self.action_mode = "yakuhai_furo"
-
-        print("mode: "+self.action_mode)
 
         if self.action_mode == "kyusyu":
             legal_discards = [
@@ -429,25 +423,45 @@ class MyAgent(CustomAgentBase):
         
         chi_actions = [a for a in legal_actions if a.type() == ActionType.CHI]
         if len(chi_actions) >= 1:
-            for a in chi_actions:
-                print(a.open().tiles_from_hand()[0].type())
-                print(a.open().tiles_from_hand()[1].type())
-                print(a.open().last_tile().type())
-                print(type(a.open().tiles_from_hand()))
-            if self.action_mode=="yakuhai_furo":
-                return chi_actions[0]
+            doras_of_chi_actions = [0 for _ in range(len(chi_actions))]
+            for i in range(len(chi_actions)):
+                a = chi_actions[i]
+                if a.open().tiles_from_hand()[0].type() in doras:
+                    doras_of_chi_actions[i] += 1
+                    if a.open().tiles_from_hand()[0].is_red():
+                        doras_of_chi_actions[i] += 1
+                if a.open().tiles_from_hand()[1].type() in doras:
+                    doras_of_chi_actions[i] += 1
+                    if a.open().tiles_from_hand()[1].is_red():
+                        doras_of_chi_actions[i] += 1
+            last_tile = chi_actions[0].open().last_tile()
+            max_doras_of_chi_actions = max(doras_of_chi_actions)
+            max_doras_index_of_chi_actions = doras_of_chi_actions.index(max_doras_of_chi_actions)
+            is_last_tile_having = False
+            is_anko_tile_having = False
+            if hand[0][last_tile.type()] == 1:
+                is_last_tile_having = True
+                if last_tile.type() in doras or last_tile.is_red():
+                    is_last_tile_having = False
+            if hand[2][chi_actions[max_doras_index_of_chi_actions].open().tiles_from_hand()[0].type()] == 1 or hand[2][chi_actions[max_doras_index_of_chi_actions].open().tiles_from_hand()[1].type()] == 1:
+                is_anko_tile_having = True
+                if last_tile.type() in doras or last_tile.is_red():
+                    is_anko_tile_having = False
+            
+            if self.action_mode=="yakuhai_furo" and (not is_last_tile_having) and (not is_anko_tile_having):
+                return chi_actions[max_doras_index_of_chi_actions]
             else:
                 pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
                 return pass_action
 
-        steal_actions = [
-            a for a in legal_actions
-            if a.type() in [ActionType.CHI, ActionType.PON, ActionType.OPEN_KAN]
-        ]
+        open_kan_actions = [a for a in legal_actions if a.type() in [ActionType.OPEN_KAN]]
         
-        if len(steal_actions) >= 1:
-            pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
-            return pass_action
+        if len(open_kan_actions) >= 1:
+            if self.action_mode=="yakuhai_furo":
+                return open_kan_actions[0]
+            else:
+                pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
+                return pass_action
         """
         if len(steal_actions) >= 1:
             return random.choice(steal_actions)
@@ -570,6 +584,11 @@ if __name__ == "__main__":
         if logging:
             save_log(obs_dict, env_, logs)
 
+    sum_rank = 0
+    for i in result_rank:
+        sum_rank += int(i)
+
     print("rank: "+result_rank)
+    print("Ave.: "+str(sum_rank/n_games))
     print("game has ended")
 
