@@ -31,6 +31,7 @@ class MyAgent(CustomAgentBase):
         super().__init__()
         self.remaining_tiles = [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],[1,1,1]]
         self.action_mode = "menzen"
+        self.target_yaku = ""
         self.remaining_tiles_num = 70
 
     def act(self, obs: mjx.Observation) -> mjx.Action:
@@ -189,7 +190,7 @@ class MyAgent(CustomAgentBase):
                         else:
                             effective_list[i] *= 0.8*bonus
             
-            # 最も効果的でない牌を選択
+            # 最も効果的でない（最も不必要な）牌を選択
             effective_min = 100000
             for a in hand_discards:
                 if effective_list[a.tile().type()]<effective_min:
@@ -311,8 +312,6 @@ class MyAgent(CustomAgentBase):
                     danger_min_action = a
             
             return danger_min_action
-
-
                         
         hand = obs.MjxLargeV0().current_hand(obs)
         target = obs.MjxLargeV0().target_tile(obs)
@@ -329,12 +328,15 @@ class MyAgent(CustomAgentBase):
         doras = obs.doras()
         dealer_num = -1
 
+        manzu = [0,1,2,3,4,5,6,7,8]
+        pinzu = [9,10,11,12,13,14,15,16,17]
+        sozu = [18,19,20,21,22,23,24,25,26]
         tyutyan = [1,2,3,4,5,6,7,10,11,12,13,14,15,16,19,20,21,22,23,24,25]
         yaotyu = [0,8,9,17,18,26,27,28,29,30,31,32,33]
         zihai = [27,28,29,30,31,32,33]
 
         yakuhai = [31,32,33]
-        # 役牌の処理
+        # 自風,場風を役牌に追加
         for a in dealer:
             if a[0]==1:
                 dealer_num=0
@@ -358,6 +360,11 @@ class MyAgent(CustomAgentBase):
         else:
             if not 27 in yakuhai:
                 yakuhai.append(27)
+
+        effective_draw_list = []
+        for i in range(34):
+            if effective_draw[i]==1:
+                effective_draw_list.append(i)
         
         # 山に残っている牌の種類,数をカウント
         self.remaining_tiles = [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],[1,1,1]]
@@ -441,6 +448,7 @@ class MyAgent(CustomAgentBase):
 
         # 行動選択処理
         self.action_mode = "menzen"
+        self.target_yaku = ""
         dangerous_situation = riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0] or self.remaining_tiles_num<20 # 誰かがリーチ、または流局間際である
         legal_actions = obs.legal_actions()
 
@@ -459,7 +467,7 @@ class MyAgent(CustomAgentBase):
                 for i in yaotyu:
                     if hand[0][i]==1:
                         count_kyusyu += 1
-                if count_kyusyu>=11:
+                if count_kyusyu>=10:
                     self.action_mode = "kyusyu"
                 else:
                     return kyusyu_actions[0]
@@ -477,15 +485,15 @@ class MyAgent(CustomAgentBase):
             legal_discards = [a for a in legal_actions if a.type() in [ActionType.DISCARD, ActionType.TSUMOGIRI]]
             effective_discard_types = obs.curr_hand().effective_discard_types()
             effective_discards = [a for a in legal_discards if a.tile().type() in effective_discard_types]
-            for a in effective_draw:
+            for a in effective_draw_list:
                remaining_agarihai_num+=self.remaining_tiles[0][a]
             if remaining_agarihai_num==0: # アガり牌が存在しない
                 shanpon_count = 0
-                for a in effective_draw:
+                for a in effective_draw_list:
                     if hand[1][a]==1 and hand[2][a]==0:
                         shanpon_count += 1
                 if shanpon_count >=2:
-                    change_wait_discard = [a for a in legal_discards if a.tile().type() in effective_draw]
+                    change_wait_discard = [a for a in legal_discards if a.tile().type() in effective_draw_list]
                     if dangerous_situation:
                         return discard_in_riichi(riichi,discarded_tiles,change_wait_discard,dealer_num,doras,self.remaining_tiles,self.remaining_tiles_num)
                     else:
@@ -500,7 +508,8 @@ class MyAgent(CustomAgentBase):
                         return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,self.remaining_tiles_num)
                     else:
                         return discard_effective(legal_discards,doras,self.remaining_tiles)
-            return riichi_actions[0]
+            else:
+                return riichi_actions[0]
         elif len(riichi_actions) > 1:
             list_of_effective_draw = []
             legal_discards = [a for a in legal_actions if a.type() in [ActionType.DISCARD, ActionType.TSUMOGIRI]]
@@ -554,6 +563,45 @@ class MyAgent(CustomAgentBase):
             for i in yakuhai:
                 if count_furo_list[i]>=3:
                     self.action_mode = "yakuhai_furo" # 既に役がある鳴き
+        
+        # 混一色,清一色を目指すかどうかの判断
+        manzu_counter = 0
+        pinzu_counter = 0
+        sozu_counter = 0
+        zihai_counter = 0
+        for i in range(34):
+            for j in range(4):
+                if hand[j][i]==1:
+                    if i in manzu:
+                        manzu_counter+=1
+                    elif i in pinzu:
+                        pinzu_counter+=1
+                    elif i in sozu:
+                        sozu_counter+=1
+                    elif i in zihai:
+                        zihai_counter+=1
+            if i in manzu:
+                manzu_counter += count_furo_list[i]
+            elif i in pinzu:
+                pinzu_counter += count_furo_list[i]
+            elif i in sozu:
+                sozu_counter += count_furo_list[i]
+            elif i in zihai:
+                zihai_counter += count_furo_list[i]
+        
+        if manzu_counter+zihai_counter>=11:
+            self.target_yaku = "some_m"
+            if manzu_counter>=11:
+                self.target_yaku = "tin_m"
+        elif pinzu_counter+zihai_counter>=11:
+            self.target_yaku = "some_p"
+            if pinzu_counter>=11:
+                self.target_yaku = "tim_p"
+        elif sozu_counter+zihai_counter>=11:
+            self.target_yaku = "some_s"
+            if sozu_counter>=11:
+                self.target_yaku = "tim_s"
+
         
         # 国士無双用の例外処理
         if self.action_mode == "kyusyu":
@@ -612,6 +660,9 @@ class MyAgent(CustomAgentBase):
         # ポンの処理
         pon_actions = [a for a in legal_actions if a.type() == ActionType.PON]
         if len(pon_actions) >= 1:
+            if pon_actions[0].open().last_tile().type() in effective_draw_list:
+                if self.action_mode=="yakuhai_furo":
+                    return pon_actions[0]
             count_toitsu = 0
             toitsu_feat = []
             for i in range(34):
@@ -632,6 +683,9 @@ class MyAgent(CustomAgentBase):
         # チーの処理
         chi_actions = [a for a in legal_actions if a.type() == ActionType.CHI]
         if len(chi_actions) >= 1:
+            if chi_actions[0].open().last_tile().type() in effective_draw_list:
+                if self.action_mode=="yakuhai_furo":
+                    return chi_actions[0]
             doras_of_chi_actions = [0 for _ in range(len(chi_actions))]
             for i in range(len(chi_actions)):
                 a = chi_actions[i]
@@ -678,11 +732,20 @@ class MyAgent(CustomAgentBase):
             return added_kan_actions[0]
 
         # 暗槓の処理
-        closed_kan_actions = [
-            a for a in legal_actions if a.type() in [ActionType.CLOSED_KAN]
-        ]
+        closed_kan_actions = [a for a in legal_actions if a.type() in [ActionType.CLOSED_KAN]]
         if len(closed_kan_actions) >= 1:
-            return closed_kan_actions[0]
+            pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
+            tile_type_of_closed_kan = closed_kan_actions[0].open().tiles_from_hand()[0].type()
+            if tile_type_of_closed_kan in zihai:
+                return closed_kan_actions[0] # 字牌は無条件で暗槓
+            # 順子の一部になっているときにはパスする
+            elif tile_type_of_closed_kan in [0,9,18]:
+                if hand[0][tile_type_of_closed_kan+1]==1 and hand[0][tile_type_of_closed_kan+2]==1:
+                    return pass_action 
+            elif tile_type_of_closed_kan in [1,10,19]:
+                if hand[0][tile_type_of_closed_kan-1]==1 and hand[0][tile_type_of_closed_kan+1]==1:
+                    return pass_action
+
 
         # 打牌の処理
         legal_discards = [a for a in legal_actions if a.type() in [ActionType.DISCARD, ActionType.TSUMOGIRI]]
