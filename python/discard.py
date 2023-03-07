@@ -4,6 +4,13 @@ from search_suzi import *
 
 yaotyu = [0,8,9,17,18,26,27,28,29,30,31,32,33]
 zihai = [27,28,29,30,31,32,33]
+
+def discard(riichi,discarded_tiles,effective_discards,dealer_num,doras,remaining_tiles,remaining_tiles_num,dangerous_situation):
+    if dangerous_situation:
+        return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,remaining_tiles,remaining_tiles_num)
+    else:
+        return discard_effective(effective_discards,doras,remaining_tiles)
+
 def discard_effective(hand_discards,doras,remaining_tiles):
             if len(hand_discards)==1: # 選択のしようがない
                 return hand_discards[0]
