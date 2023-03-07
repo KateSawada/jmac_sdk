@@ -324,6 +324,7 @@ class MyAgent(CustomAgentBase):
         dealer = obs.MjxLargeV0().dealer(obs)
         ranking = obs.MjxLargeV0().rankings(obs)
         effective_draw = obs.MjxLargeV0().effective_draws(obs)[0]
+        shanten = obs.MjxLargeV0().shanten(obs)
         round = obs.MjxLargeV0().round(obs)
         doras = obs.doras()
         dealer_num = -1
@@ -454,7 +455,14 @@ class MyAgent(CustomAgentBase):
             if ranking[1][0]==1:
                 self.action_mode = "kyusyu"
             else:
-                return kyusyu_actions[0]
+                count_kyusyu = 0
+                for i in yaotyu:
+                    if hand[0][i]==1:
+                        count_kyusyu += 1
+                if count_kyusyu>=11:
+                    self.action_mode = "kyusyu"
+                else:
+                    return kyusyu_actions[0]
         
         # アガれるときはアガる
         win_actions = [a for a in legal_actions if a.type() in [ActionType.TSUMO, ActionType.RON]]
@@ -572,6 +580,16 @@ class MyAgent(CustomAgentBase):
                 else:
                     return discard_effective(tyutyan_discards,doras,self.remaining_tiles)
             else:
+                toitsu_or_anko_yaotyu_list = []
+                for i in yaotyu:
+                    if hand[1][i] == 1:
+                        toitsu_or_anko_yaotyu_list.append(i)
+                if len(toitsu_or_anko_yaotyu_list)>=2:
+                    yaotyu_discards = [a for a in legal_discards if a.tile().type() in toitsu_or_anko_yaotyu_list]
+                    if dangerous_situation:
+                        return discard_in_riichi(riichi,discarded_tiles,yaotyu_discards,dealer_num,doras,self.remaining_tiles,self.remaining_tiles_num)
+                    else:
+                        return discard_effective(yaotyu_discards,doras,self.remaining_tiles)
                 effective_discard_types = obs.curr_hand().effective_discard_types()
                 effective_discards = [a for a in legal_discards if a.tile().type() in effective_discard_types]
                 if len(effective_discards) > 0:
@@ -668,8 +686,15 @@ class MyAgent(CustomAgentBase):
 
         # 打牌の処理
         legal_discards = [a for a in legal_actions if a.type() in [ActionType.DISCARD, ActionType.TSUMOGIRI]]
+        if ((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[3][0]==1) or (((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)) and shanten[2][0]==1):
+            return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,self.remaining_tiles_num)
         effective_discard_types = obs.curr_hand().effective_discard_types()
         effective_discards = [a for a in legal_discards if a.tile().type() in effective_discard_types]
+        for i in zihai:
+            if effective_draw[i]==1 and self.remaining_tiles[0][i]==0:
+                effective_zihai_discards = [a for a in legal_discards if a.tile().type() == i]
+                for a in effective_zihai_discards:
+                    effective_discards.append(a)
         if len(effective_discards) > 0:
             if len(effective_discards) > 1:
                 for a in effective_discards:
@@ -780,8 +805,8 @@ if __name__ == "__main__":
     agents = [
         MyAgent(),                  # 自作Agent
         mjx.agents.ShantenAgent(),  # mjxに実装されているAgent
-        mjx.agents.ShantenAgent(),  # mjxに実装されているAgent
-        mjx.agents.ShantenAgent(),  # mjxに実装されているAgent
+        MenzenAgent(),  # mjxに実装されているAgent
+        MenzenAgent(),  # mjxに実装されているAgent
         ]
 
     # 卓の初期化
