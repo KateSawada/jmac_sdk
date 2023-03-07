@@ -4,7 +4,7 @@ from search_suzi import *
 
 yaotyu = [0,8,9,17,18,26,27,28,29,30,31,32,33]
 zihai = [27,28,29,30,31,32,33]
-def discard_effective(hand_discards,doras,remaining_tiles) -> mjx.Action:
+def discard_effective(hand_discards,doras,remaining_tiles):
             if len(hand_discards)==1: # 選択のしようがない
                 return hand_discards[0]
             discard_effective_list = [a.tile().type() for a in hand_discards]
@@ -51,7 +51,7 @@ def discard_effective(hand_discards,doras,remaining_tiles) -> mjx.Action:
                     best_effective_discard = a
             return best_effective_discard
 
-def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,remaining_tile_num) -> mjx.Action:
+def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,remaining_tile_num):
             if len(hand_discards)==1: # 選択のしようがない
                 return hand_discards[0]
             danger_point = {a:0 for a in range(34)}
