@@ -151,6 +151,33 @@ class MyAgent(CustomAgentBase):
             else:
                 return []
         
+        def is_piece_of_syuntsu(hand,type):
+            is_piece_of_syuntsu = False
+            if type in [0,9,18]:
+                if hand[0][type+1]==1 and hand[0][type+2]==1:
+                    is_piece_of_syuntsu = True
+            elif type in [1,10,19]:
+                if hand[0][type-1]==1 and hand[0][type+1]==1:
+                    is_piece_of_syuntsu = True
+                elif hand[0][type+1]==1 and hand[0][type+2]==1:
+                    is_piece_of_syuntsu = True
+            elif type in [2,3,4,5,6,11,12,13,14,15,20,21,22,23,24]:
+                if hand[0][type-2]==1 and hand[0][type-1]==1:
+                    is_piece_of_syuntsu = True
+                elif hand[0][type-1]==1 and hand[0][type+1]==1:
+                    is_piece_of_syuntsu = True
+                elif hand[0][type+1]==1 and hand[0][type+2]==1:
+                    is_piece_of_syuntsu = True
+            elif type in [7,16,25]:
+                if hand[0][type-2]==1 and hand[0][type-1]==1:
+                    is_piece_of_syuntsu = True
+                elif hand[0][type-1]==1 and hand[0][type+1]==1:
+                    is_piece_of_syuntsu = True
+            elif type in [8,17,26]:
+                if hand[0][type-2]==1 and hand[0][type-1]==1:
+                    is_piece_of_syuntsu = True
+            return is_piece_of_syuntsu
+        
         def discard_effective(hand_discards,doras,remaining_tiles) -> mjx.Action:
             if len(hand_discards)==1: # 選択のしようがない
                 return hand_discards[0]
@@ -734,17 +761,19 @@ class MyAgent(CustomAgentBase):
         # 暗槓の処理
         closed_kan_actions = [a for a in legal_actions if a.type() in [ActionType.CLOSED_KAN]]
         if len(closed_kan_actions) >= 1:
+            if riichi[0][0]==1:
+                return closed_kan_actions[0]
             pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
             tile_type_of_closed_kan = closed_kan_actions[0].open().tiles_from_hand()[0].type()
+            effective_discard_types = obs.curr_hand().effective_discard_types()
             if tile_type_of_closed_kan in zihai:
                 return closed_kan_actions[0] # 字牌は無条件で暗槓
             # 順子の一部になっているときにはパスする
-            elif tile_type_of_closed_kan in [0,9,18]:
-                if hand[0][tile_type_of_closed_kan+1]==1 and hand[0][tile_type_of_closed_kan+2]==1:
-                    return pass_action 
-            elif tile_type_of_closed_kan in [1,10,19]:
-                if hand[0][tile_type_of_closed_kan-1]==1 and hand[0][tile_type_of_closed_kan+1]==1:
-                    return pass_action
+            elif is_piece_of_syuntsu(hand,tile_type_of_closed_kan):
+                return pass_action
+            elif tile_type_of_closed_kan in effective_discard_types:
+                return closed_kan_actions[0]
+            return closed_kan_actions[0]
 
 
         # 打牌の処理
