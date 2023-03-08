@@ -6,6 +6,7 @@ import os
 from datetime import datetime
 import json
 import random
+import pprint
 
 import mjx
 import mjx.agents
@@ -29,6 +30,12 @@ class MyAgent(CustomAgentBase):
         Returns:
             mjx.Action: 実際に取る行動
         """
+        print("@@@@@@@@@@@@ OBS @@@@@@@@@@@@")
+        pprint.pprint(dir(obs))
+        pprint.pprint(vars(obs))
+        print("############ ACTION ###############")
+        pprint.pprint(dir(obs.legal_actions()))
+        pprint.pprint(vars(obs.legal_actions()))
         # ランダムに取れる行動をする
         return random.choice(obs.legal_actions())
 
