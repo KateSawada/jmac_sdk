@@ -3,3 +3,6 @@ tqdm
 python-socketio
 eventlet
 python-socketio[client]
+torch
+pytorch_lightning
+tensorboard

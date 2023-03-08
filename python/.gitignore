@@ -162,3 +162,7 @@ cython_debug/
 *.json
 
 /logs/
+
+*.npy
+*.pth
+workspace/*logs/
