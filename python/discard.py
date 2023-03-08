@@ -5,9 +5,11 @@ from search_suzi import *
 yaotyu = [0,8,9,17,18,26,27,28,29,30,31,32,33]
 zihai = [27,28,29,30,31,32,33]
 
-def discard(riichi,discarded_tiles,effective_discards,dealer_num,doras,remaining_tiles,when_riichi,dangerous_situation):
+def discard(riichi,discarded_tiles,effective_discards,dealer_num,doras,remaining_tiles,after_riichi_discards_list,when_riichi,dangerous_situation,is_last_round_last_rank):
+    if is_last_round_last_rank:
+        return discard_effective(effective_discards,doras,remaining_tiles)
     if dangerous_situation:
-        return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,remaining_tiles,when_riichi)
+        return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,remaining_tiles,after_riichi_discards_list,when_riichi)
     else:
         return discard_effective(effective_discards,doras,remaining_tiles)
 
@@ -58,7 +60,7 @@ def discard_effective(hand_discards,doras,remaining_tiles):
                     best_effective_discard = a
             return best_effective_discard
 
-def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,when_riichi):
+def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,after_riichi_discards_list,when_riichi):
             if len(hand_discards)==1: # 選択のしようがない
                 return hand_discards[0]
             danger_point = {a:0 for a in range(34)}
@@ -84,6 +86,9 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,wh
             discard_list_1 = [0 for _ in range(34)]
             for i in range(3,6): # 下家の捨て牌
                 for j in range(34): # 牌をすべて探索
+                    if who[1][0]==1:
+                        if after_riichi_discards_list[0][j] > 0:
+                            discard_list_1[j] = 1
                     if discards[i][j]==1:
                         discard_list_1[j] = 1
             for i in range(34):
@@ -107,6 +112,9 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,wh
             discard_list_2 = [0 for _ in range(34)]
             for i in range(6,9): # 対面の捨て牌
                 for j in range(34): # 牌をすべて探索
+                    if who[2][0]==1:
+                        if after_riichi_discards_list[1][j] > 0:
+                            discard_list_2[j] = 1
                     if discards[i][j]==1:
                         discard_list_2[j] = 1
             for i in range(34):
@@ -130,6 +138,9 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,wh
             discard_list_3 = [0 for _ in range(34)]
             for i in range(9,12): # 上家の捨て牌
                 for j in range(34): # 牌をすべて探索
+                    if who[3][0]==1:
+                        if after_riichi_discards_list[2][j] > 0:
+                            discard_list_3[j] = 1
                     if discards[i][j]==1:
                         discard_list_3[j] = 1
             for i in range(34):
