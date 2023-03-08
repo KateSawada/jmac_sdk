@@ -80,6 +80,12 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
             danger_list_3 =[1 for _ in range(35)]
             adjust_danger_list =[1 for _ in range(34)]
 
+            zihai_discard_list = [0 for _ in range(34)]
+            for i in range(12):
+                for j in range(27,34):
+                    if discards[i][j]==1:
+                        zihai_discard_list[j] = 1
+
             for dora in doras:
                 danger_list_1[dora]+=0.5
                 danger_list_2[dora]+=0.5
@@ -273,7 +279,14 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                     adjust_danger_list[i]=0 # 完全安牌
             
             for i in range(27,34):
-                if remaining_tiles[0][i] == 1:
+                if remaining_tiles[0][i] == 3:
+                    adjust_danger_list[i] = 1.5
+                elif remaining_tiles[0][i] == 2:
+                    if zihai_discard_list[i]==1:
+                        adjust_danger_list[i] = 0.2
+                    else:
+                        adjust_danger_list[i] = 1.2
+                elif remaining_tiles[0][i] == 1:
                     adjust_danger_list[i] = 0.1
                 elif remaining_tiles[0][i] == 0:
                     adjust_danger_list[i] = 0

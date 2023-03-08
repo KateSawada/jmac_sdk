@@ -61,6 +61,11 @@ class MyAgent(CustomAgentBase):
         dora_total_num = 0
         dealer_num = -1
         my_rank = 1
+        simotya_rank = 1
+        toimen_rank = 1
+        kamitya_rank = 1
+        kyotaku_num = 0
+        honba_num = 0
 
         manzu = [0,1,2,3,4,5,6,7,8]
         pinzu = [9,10,11,12,13,14,15,16,17]
@@ -102,6 +107,12 @@ class MyAgent(CustomAgentBase):
             self.my_playerId = 2
         elif round[0][0]==0 and dealer_num==3:
             self.my_playerId = 1
+        
+        for i in range(5):
+            if kyotaku[i][0]==1:
+                kyotaku_num += 1
+            if honba[i][0]==1:
+                honba_num += 1
         effective_draw_types = []
         for i in range(34):
             if effective_draw[i]==1:
@@ -124,7 +135,16 @@ class MyAgent(CustomAgentBase):
         for i in range(3):
             if ranking[i][0]==1:
                 my_rank += 1
-        
+        for i in range(3,6):
+            if ranking[i][0]==1:
+                simotya_rank += 1
+        for i in range(6,9):
+            if ranking[i][0]==1:
+                toimen_rank += 1
+        for i in range(9,12):
+            if ranking[i][0]==1:
+                kamitya_rank += 1
+       
         # 山に残っている牌の種類,数をカウント
         self.remaining_tiles = [[4 for _ in range(34)],[1,1,1]]
         for dora in doras:
@@ -279,7 +299,16 @@ class MyAgent(CustomAgentBase):
                 if len(effective_discards)>0:
                     return discard(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
                 else:
-                    return discard(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
+                    change_wait_discard_types = []
+                    for a in effective_draw_types:
+                        for e in check_effective_hai(a):
+                            if not e in change_wait_discard_types:
+                                change_wait_discard_types.append(e)
+                    change_wait_discards = [a for a in legal_discards if a.tile().type() in change_wait_discard_types]
+                    if len(change_wait_discards)>0 and riichi[1][0]==0 and riichi[2][0]==0 and riichi[3][0]==0:
+                        return discard(riichi,discarded_tiles,change_wait_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
+                    else:
+                        return discard(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
             else:
                 is_furiten = False
                 for a in effective_draw_types:
@@ -406,19 +435,19 @@ class MyAgent(CustomAgentBase):
         remaining_zihai_num = 0
         for i in zihai:
             remaining_zihai_num += self.remaining_tiles[0][i]
-        if zihai_toitsu_counter*2+zihai_anko_counter*3>=10 and remaining_zihai_num>13 and furo_manzu_counter==0 and furo_pinzu_counter==0 and furo_sozu_counter==0:
+        if zihai_toitsu_counter*2+zihai_anko_counter*3+furo_zihai_counter>=10 and remaining_zihai_num>13 and furo_manzu_counter==0 and furo_pinzu_counter==0 and furo_sozu_counter==0:
             self.target_yaku = "tsuiso"
-        elif manzu_counter+zihai_toitsu_counter*2+zihai_anko_counter*3+furo_zihai_counter>=11 and manzu_counter>=pinzu_counter and manzu_counter>=sozu_counter and furo_pinzu_counter==0 and furo_sozu_counter==0:
+        elif manzu_counter+furo_manzu_counter+zihai_toitsu_counter*2+zihai_anko_counter*3+furo_zihai_counter>=11 and manzu_counter>=pinzu_counter and manzu_counter>=sozu_counter and furo_pinzu_counter==0 and furo_sozu_counter==0:
             self.target_yaku = "some_m"
-            if manzu_counter>=10 and furo_zihai_counter==0:
+            if manzu_counter+furo_manzu_counter>=10 and furo_zihai_counter==0:
                 self.target_yaku = "tin_m"
-        elif pinzu_counter+zihai_toitsu_counter*2+zihai_anko_counter*3+furo_zihai_counter>=11 and pinzu_counter>=manzu_counter and pinzu_counter>=sozu_counter and furo_manzu_counter==0 and furo_sozu_counter==0:
+        elif pinzu_counter+furo_pinzu_counter+zihai_toitsu_counter*2+zihai_anko_counter*3+furo_zihai_counter>=11 and pinzu_counter>=manzu_counter and pinzu_counter>=sozu_counter and furo_manzu_counter==0 and furo_sozu_counter==0:
             self.target_yaku = "some_p"
-            if pinzu_counter>=10 and furo_zihai_counter==0:
+            if pinzu_counter+furo_pinzu_counter>=10 and furo_zihai_counter==0:
                 self.target_yaku = "tin_p"
-        elif sozu_counter+zihai_toitsu_counter*2+zihai_anko_counter*3+furo_zihai_counter>=11 and sozu_counter>=manzu_counter and sozu_counter>=pinzu_counter and furo_manzu_counter==0 and furo_pinzu_counter==0:
+        elif sozu_counter+furo_sozu_counter+zihai_toitsu_counter*2+zihai_anko_counter*3+furo_zihai_counter>=11 and sozu_counter>=manzu_counter and sozu_counter>=pinzu_counter and furo_manzu_counter==0 and furo_pinzu_counter==0:
             self.target_yaku = "some_s"
-            if sozu_counter>=10 and furo_zihai_counter==0:
+            if sozu_counter+furo_sozu_counter>=10 and furo_zihai_counter==0:
                 self.target_yaku = "tin_s"
 
         
@@ -440,7 +469,7 @@ class MyAgent(CustomAgentBase):
                         tyutyan_dora_discards.append(a)
             if len(tyutyan_dora_discards)>0:
                 tyutyan_discards = tyutyan_dora_discards
-                    
+
             if len(tyutyan_discards)>0:
                 return discard(riichi,discarded_tiles,tyutyan_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
             else:
@@ -633,8 +662,18 @@ class MyAgent(CustomAgentBase):
                 return closed_kan_actions[0]
 
         # 打牌の処理
+        adjust_by_dora = 0
+        if dora_total_num>=4:
+            adjust_by_dora = 1
         legal_discards = [a for a in legal_actions if a.type() in [ActionType.DISCARD, ActionType.TSUMOGIRI]]
-        if (not is_last_round_last_rank) and (((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[2][0]==1 and  dealer_num!=0) or ((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[3][0]==1 and dealer_num==0) or (((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)) and shanten[1][0]==1) or ((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[0][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>=18000))): # ベタ降り
+        # ベタ降り
+        if (not is_last_round_last_rank) and (((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[2+adjust_by_dora][0]==1 and  dealer_num!=0)
+            or ((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[3+adjust_by_dora][0]==1 and dealer_num==0)
+            or (((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)) and shanten[1+adjust_by_dora][0]==1)
+            or ((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[0+adjust_by_dora][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>=18000))
+            or ((my_rank==1 and round[6][0]==1 and dealer_num==0) and ((riichi[1][0]==1 and (-diff_ten(tens,my_rank,simotya_rank)>(12000+kyotaku_num*1000+honba_num*100))) or (riichi[2][0]==1 and (-diff_ten(tens,my_rank,toimen_rank)>(12000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(12000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+            or ((my_rank==1 and round[6][0]==1 and dealer_num!=0) and ((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)) and shanten[0][0]==1)
+            ):
             return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
         effective_discard_types = obs.curr_hand().effective_discard_types()
         effective_discards = [a for a in legal_discards if a.tile().type() in effective_discard_types]
@@ -781,9 +820,10 @@ if __name__ == "__main__":
         "player_3": 3,
     }
 
-    agents = [
-        MyAgent(),                  # 自作Agent
-        mjx.agents.ShantenAgent(),  # mjxに実装されているAgent
+    agents = [                 
+        MyAgent(),  # 自作Agent
+        MenzenAgent(),
+        # mjx.agents.ShantenAgent(),  # mjxに実装されているAgent 
         MenzenAgent(),  # mjxに実装されているAgent
         MenzenAgent(),  # mjxに実装されているAgent
         ]
