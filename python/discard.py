@@ -7,13 +7,13 @@ zihai = [27,28,29,30,31,32,33]
 
 def discard(riichi,discarded_tiles,effective_discards,dealer_num,doras,remaining_tiles,after_riichi_discards_list,when_riichi,dangerous_situation,is_last_round_last_rank):
     if is_last_round_last_rank:
-        return discard_effective(effective_discards,doras,remaining_tiles)
+        return discard_effective(effective_discards,discarded_tiles,doras,remaining_tiles)
     if dangerous_situation:
         return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,remaining_tiles,after_riichi_discards_list,when_riichi)
     else:
-        return discard_effective(effective_discards,doras,remaining_tiles)
+        return discard_effective(effective_discards,discarded_tiles,doras,remaining_tiles)
 
-def discard_effective(hand_discards,doras,remaining_tiles):
+def discard_effective(hand_discards,discarded_tiles,doras,remaining_tiles):
             if len(hand_discards)==1: # 選択のしようがない
                 return hand_discards[0]
             discard_effective_list = [a.tile().type() for a in hand_discards]
@@ -21,6 +21,14 @@ def discard_effective(hand_discards,doras,remaining_tiles):
 
             effective_list = [1 for _ in range(34)]
             for i in discard_effective_list:
+                my_discarded_tiles_types = []
+                for x in range(3):
+                    for y in range(34):
+                        if discarded_tiles[x][y]==1:
+                            if not (y in my_discarded_tiles_types):
+                                my_discarded_tiles_types.append(y)
+                if i in my_discarded_tiles_types:
+                    effective_list[i] *= 0.1
                 effective_tiles = check_effective_hai(i)
                 for j in effective_tiles:
                     bonus = 1
@@ -84,11 +92,12 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                 for i in range(27,34):
                     danger_list_1[i] /= 6 # 字牌の危険度を一律下げる
             discard_list_1 = [0 for _ in range(34)]
+            if who[1][0]==1:
+                for i in range(34):
+                    if after_riichi_discards_list[0][i] > 0:
+                        discard_list_1[i] = 2
             for i in range(3,6): # 下家の捨て牌
                 for j in range(34): # 牌をすべて探索
-                    if who[1][0]==1:
-                        if after_riichi_discards_list[0][j] > 0:
-                            discard_list_1[j] = 1
                     if discards[i][j]==1:
                         discard_list_1[j] = 1
             for i in range(34):
@@ -100,6 +109,14 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                                 danger_list_1[suzi] /= 4 # 牌の危険度を下げる(スジandヤオ九牌)
                             else:
                                 danger_list_1[suzi] /= 2 # 牌の危険度を下げる(スジ)
+                elif discard_list_1[i]==2: # 他家がリーチ後に捨てた
+                    danger_list_1[i] = 0 # 牌の危険度を下げる(安全牌)
+                    if i not in zihai:
+                        for suzi in check_suzi(i):
+                            if suzi in yaotyu:
+                                danger_list_1[suzi] /= 3 # 牌の危険度を下げる(スジandヤオ九牌)
+                            else:
+                                danger_list_1[suzi] /= 1.5 # 牌の危険度を下げる(スジ)
 
             if who[2][0]==1: # 対面リーチ
                 danger_list_2[34] = 8
@@ -110,11 +127,12 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                 for i in range(27,34):
                     danger_list_2[i] /= 6 # 字牌の危険度を一律下げる
             discard_list_2 = [0 for _ in range(34)]
+            if who[2][0]==1:
+                for i in range(34):
+                    if after_riichi_discards_list[1][i] > 0:
+                        discard_list_2[i] = 2
             for i in range(6,9): # 対面の捨て牌
                 for j in range(34): # 牌をすべて探索
-                    if who[2][0]==1:
-                        if after_riichi_discards_list[1][j] > 0:
-                            discard_list_2[j] = 1
                     if discards[i][j]==1:
                         discard_list_2[j] = 1
             for i in range(34):
@@ -126,6 +144,14 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                                 danger_list_2[suzi] /= 4 # 牌の危険度を下げる(スジandヤオ九牌)
                             else:
                                 danger_list_2[suzi] /= 2 # 牌の危険度を下げる(スジ)
+                elif discard_list_2[i]==2: # 他家がリーチ後に捨てた
+                    danger_list_2[i] = 0 # 牌の危険度を下げる(安全牌)
+                    if i not in zihai:
+                        for suzi in check_suzi(i):
+                            if suzi in yaotyu:
+                                danger_list_2[suzi] /= 3 # 牌の危険度を下げる(スジandヤオ九牌)
+                            else:
+                                danger_list_2[suzi] /= 1.5 # 牌の危険度を下げる(スジ)
 
             if who[3][0]==1: # 上家リーチ
                 danger_list_3[34] = 8
@@ -136,11 +162,12 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                 for i in range(27,34):
                     danger_list_3[i] /= 6 # 字牌の危険度を一律下げる
             discard_list_3 = [0 for _ in range(34)]
+            if who[3][0]==1:
+                for i in range(34):
+                    if after_riichi_discards_list[2][i] > 0:
+                        discard_list_3[i] = 2
             for i in range(9,12): # 上家の捨て牌
                 for j in range(34): # 牌をすべて探索
-                    if who[3][0]==1:
-                        if after_riichi_discards_list[2][j] > 0:
-                            discard_list_3[j] = 1
                     if discards[i][j]==1:
                         discard_list_3[j] = 1
             for i in range(34):
@@ -152,6 +179,14 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                                 danger_list_3[suzi] /= 4 # 牌の危険度を下げる(スジandヤオ九牌)
                             else:
                                 danger_list_3[suzi] /= 2 # 牌の危険度を下げる(スジ)
+                elif discard_list_3[i]==2: # 他家がリーチ後に捨てた
+                    danger_list_3[i] = 0 # 牌の危険度を下げる(安全牌)
+                    if i not in zihai:
+                        for suzi in check_suzi(i):
+                            if suzi in yaotyu:
+                                danger_list_3[suzi] /= 3 # 牌の危険度を下げる(スジandヤオ九牌)
+                            else:
+                                danger_list_3[suzi] /= 1.5 # 牌の危険度を下げる(スジ)
 
             for i in range(34):
                 if (discard_list_1[i]==1 and discard_list_2[i]==1 and discard_list_3[i]==1):

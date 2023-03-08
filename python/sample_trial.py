@@ -33,12 +33,13 @@ from client.agent import CustomAgentBase
 class MyAgent(CustomAgentBase):
     def __init__(self):
         super().__init__()
-        self.remaining_tiles = [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],[1,1,1]]
+        self.remaining_tiles = [[4 for _ in range(34)],[1,1,1]]
         self.action_mode = "menzen"
         self.target_yaku = ""
         self.remaining_tiles_num = 70
         self.when_riichi = [-1,-1,-1]
         self.before_riichi_discards_list = [[0 for _ in range(34)] for _ in range(3)]
+        self.my_playerId = -1
     
     
     def act(self, obs: mjx.Observation) -> mjx.Action:                    
@@ -53,6 +54,7 @@ class MyAgent(CustomAgentBase):
         round = obs.MjxLargeV0().round(obs)
         doras = obs.doras()
         dora_in_hand = obs.MjxLargeV0().dora_num_in_hand(obs)
+        tens = obs.tens()
         dealer_num = -1
 
         manzu = [0,1,2,3,4,5,6,7,8]
@@ -63,15 +65,15 @@ class MyAgent(CustomAgentBase):
         zihai = [27,28,29,30,31,32,33]
         yakuhai = [31,32,33]
         # 自風,場風を役牌に追加
-        for a in dealer:
-            if a[0]==1:
-                dealer_num=0
-            elif a[1]==1:
-                dealer_num=1
-            elif a[2]==1:
-                dealer_num=2
-            elif a[3]==1:
-                dealer_num=3
+        if dealer[0][0]==1:
+            dealer_num=0
+        elif dealer[1][0]==1:
+            dealer_num=1
+        elif dealer[2][0]==1:
+            dealer_num=2
+        elif dealer[3][0]==1:
+            dealer_num=3
+
         if dealer_num==0:
             yakuhai.append(27)
         elif dealer_num==1:
@@ -81,12 +83,20 @@ class MyAgent(CustomAgentBase):
         elif dealer_num==3:
             yakuhai.append(28)
         if round[3][0]==1:
-            if not 28 in yakuhai:
+            if not (28 in yakuhai):
                 yakuhai.append(28)
         else:
-            if not 27 in yakuhai:
+            if not (27 in yakuhai):
                 yakuhai.append(27)
-
+        
+        if round[0][0]==0 and dealer_num==0:
+            self.my_playerId = 0
+        elif round[0][0]==0 and dealer_num==1:
+            self.my_playerId = 3
+        elif round[0][0]==0 and dealer_num==2:
+            self.my_playerId = 2
+        elif round[0][0]==0 and dealer_num==3:
+            self.my_playerId = 1
         effective_draw_types = []
         for i in range(34):
             if effective_draw[i]==1:
@@ -95,18 +105,18 @@ class MyAgent(CustomAgentBase):
         for i in range(3):
             for j in range(34):
                 if discarded_tiles[i][j]==1:
-                    if j not in my_discarded_tiles_types:
+                    if not (j in my_discarded_tiles_types):
                         my_discarded_tiles_types.append(j)
         dora_num_in_hand = 0
         for i in range(13):
             if dora_in_hand[i][0]==1:
                 dora_num_in_hand += 1
         is_last_round_last_rank = False
-        if round[6][0]==1 and ranking[2][0]==1:
+        if (round[6][0]==1 and ranking[2][0]==1) or tens[self.my_playerId]<=2000:
             is_last_round_last_rank = True
         
         # 山に残っている牌の種類,数をカウント
-        self.remaining_tiles = [[4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4],[1,1,1]]
+        self.remaining_tiles = [[4 for _ in range(34)],[1,1,1]]
         for dora in doras:
             opened_dora = 0
             if not dora in [0,9,18,27,31]:
@@ -229,7 +239,7 @@ class MyAgent(CustomAgentBase):
                 for i in yaotyu:
                     if hand[0][i]==1:
                         count_kyusyu += 1
-                if count_kyusyu>=10:
+                if count_kyusyu>=11:
                     self.action_mode = "kyusyu"
                 else:
                     return kyusyu_actions[0]
@@ -605,7 +615,7 @@ class MyAgent(CustomAgentBase):
                     if hand[1][i]==1 and hand[2][i]==0 and self.action_mode=="furo" and (not self.target_yaku in ["tin_m","tin_p","tin_s"]):
                         effective_discards.remove(a)
         for i in zihai:
-            if effective_draw[i]==1 and self.remaining_tiles[0][i]==0:
+            if (effective_draw[i]==1 or hand[2][i]==0) and self.remaining_tiles[0][i]==0:
                 effective_zihai_discards = [a for a in legal_discards if a.tile().type() == i]
                 for a in effective_zihai_discards:
                     effective_discards.append(a)
