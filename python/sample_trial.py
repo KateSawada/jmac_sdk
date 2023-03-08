@@ -175,7 +175,7 @@ class MyAgent(CustomAgentBase):
                             self.remaining_tiles[1][2]=0
                     self.remaining_tiles[0][e.open().last_tile().type()] += 1
                 
-                elif e.type() in [EventType.CLOSED_KAN]:
+                elif e.type() == EventType.CLOSED_KAN:
                     self.remaining_tiles_num -= 1
                     for t in e.open().tiles():
                         self.remaining_tiles[0][t.type()] -= 1
@@ -205,18 +205,19 @@ class MyAgent(CustomAgentBase):
         # リーチをした順目を記憶
         if riichi[1][0]==1 and self.when_riichi[0]==-1:
             self.when_riichi[0] = self.remaining_tiles_num
-            self.before_riichi_discards_list[0] = copy.copy(ignored_discards)
+            self.before_riichi_discards_list[0] = copy.deepcopy(ignored_discards)
         elif riichi[2][0]==1 and self.when_riichi[1]==-1:
             self.when_riichi[1] = self.remaining_tiles_num
-            self.before_riichi_discards_list[1] = copy.copy(ignored_discards)
+            self.before_riichi_discards_list[1] = copy.deepcopy(ignored_discards)
         elif riichi[3][0]==1 and self.when_riichi[2]==-1:
             self.when_riichi[2] = self.remaining_tiles_num
-            self.before_riichi_discards_list[2] = copy.copy(ignored_discards)
+            self.before_riichi_discards_list[2] = copy.deepcopy(ignored_discards)
 
         for i in range(3):
             for j in range(34):
                 if riichi[i+1][0]==1:
                     after_riichi_discards_list[i][j] = ignored_discards[j]-self.before_riichi_discards_list[i][j]
+        print(after_riichi_discards_list)
 
         # 行動選択処理
         self.action_mode = "menzen"
@@ -573,7 +574,7 @@ class MyAgent(CustomAgentBase):
                 return pass_action
 
         # 明槓の処理
-        open_kan_actions = [a for a in legal_actions if a.type() in [ActionType.OPEN_KAN]]
+        open_kan_actions = [a for a in legal_actions if a.type() == ActionType.OPEN_KAN]
         if len(open_kan_actions) >= 1:
             if self.action_mode=="yakuhai_furo":
                 return open_kan_actions[0]
@@ -582,12 +583,12 @@ class MyAgent(CustomAgentBase):
                 return pass_action
 
         # 加槓の処理
-        added_kan_actions = [a for a in legal_actions if a.type() in [ActionType.ADDED_KAN]]
+        added_kan_actions = [a for a in legal_actions if a.type() == ActionType.ADDED_KAN]
         if len(added_kan_actions) >= 1:
             return added_kan_actions[0]
 
         # 暗槓の処理
-        closed_kan_actions = [a for a in legal_actions if a.type() in [ActionType.CLOSED_KAN]]
+        closed_kan_actions = [a for a in legal_actions if a.type() == ActionType.CLOSED_KAN]
         if len(closed_kan_actions) >= 1:
             if riichi[0][0]==1:
                 return closed_kan_actions[0]
@@ -609,12 +610,12 @@ class MyAgent(CustomAgentBase):
             return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
         effective_discard_types = obs.curr_hand().effective_discard_types()
         effective_discards = [a for a in legal_discards if a.tile().type() in effective_discard_types]
-        for i in yakuhai:
+        for i in yakuhai: # 既に鳴いているときは対子役牌を捨てない
             for a in effective_discards:
                 if a.tile().type()==i:
                     if hand[1][i]==1 and hand[2][i]==0 and self.action_mode=="furo" and (not self.target_yaku in ["tin_m","tin_p","tin_s"]):
                         effective_discards.remove(a)
-        for i in zihai:
+        for i in zihai: # 対子で持っているが売り切れている字牌は捨てる
             if (effective_draw[i]==1 or hand[2][i]==0) and self.remaining_tiles[0][i]==0:
                 effective_zihai_discards = [a for a in legal_discards if a.tile().type() == i]
                 for a in effective_zihai_discards:
@@ -647,8 +648,13 @@ class MyAgent(CustomAgentBase):
         if len(effective_discards) > 0:
             if len(effective_discards) > 1:
                 for a in effective_discards:
-                    if a.tile().type() in doras or a.tile().is_red():
-                        effective_discards.remove(a)
+                    if a.tile().type() in doras or a.tile().is_red(): # ドラは捨てない（他の選択肢がある場合）
+                        if (a.tile().type() in zihai) and ((hand[0][a.tile().type()]==1 and hand[1][a.tile().type()]==0 and self.remaining_tiles[0][a.tile().type()]>=2) or (hand[1][a.tile().type()]==1 and hand[2][a.tile().type()]==0 and self.remaining_tiles[0][a.tile().type()]>=1)):
+                            effective_discards.remove(a)
+                        elif a.tile().type() in zihai:
+                            pass
+                        else:
+                            effective_discards.remove(a)
                 if len(effective_discards)<=0:
                     return discard(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
             return discard(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
