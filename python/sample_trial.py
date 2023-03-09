@@ -678,6 +678,10 @@ class MyAgent(CustomAgentBase):
                     if discarded_tiles[i][j]==1:
                         if j in effective_discard_types:
                             is_having_anpai_for_simotya = True
+            for i in range(34):
+                if after_riichi_discards_list[0][i]>0:
+                    if i in effective_discard_types:
+                        is_having_anpai_for_simotya = True
         is_having_anpai_for_toimen = False
         if riichi[2][0]==1:
             for i in range(6,9):
@@ -685,6 +689,10 @@ class MyAgent(CustomAgentBase):
                     if discarded_tiles[i][j]==1:
                         if j in effective_discard_types:
                             is_having_anpai_for_toimen = True
+            for i in range(34):
+                if after_riichi_discards_list[1][i]>0:
+                    if i in effective_discard_types:
+                        is_having_anpai_for_toimen = True
         is_having_anpai_for_kamitya = False
         if riichi[3][0]==1:
             for i in range(9,12):
@@ -692,6 +700,10 @@ class MyAgent(CustomAgentBase):
                     if discarded_tiles[i][j]==1:
                         if j in effective_discard_types:
                             is_having_anpai_for_kamitya = True
+            for i in range(34):
+                if after_riichi_discards_list[2][i]>0:
+                    if i in effective_discard_types:
+                        is_having_anpai_for_kamitya = True
         
         # ベタ降り
         if (not is_last_round_last_rank) and (((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[2+adjust_by_dora][0]==1 and dealer_num!=0)
