@@ -673,51 +673,86 @@ class MyAgent(CustomAgentBase):
         effective_discard_types = obs.curr_hand().effective_discard_types()
         effective_discards = [a for a in legal_discards if a.tile().type() in effective_discard_types]
         is_having_anpai_for_simotya = False
+        anpai_types_for_simotya = []
         if riichi[1][0]==1:
             for i in range(3,6):
                 for j in range(34):
                     if discarded_tiles[i][j]==1:
                         if j in effective_discard_types:
                             is_having_anpai_for_simotya = True
-                            break
+                            if not j in anpai_types_for_simotya:
+                                anpai_types_for_simotya.append(j)
             for i in range(34):
                 if after_riichi_discards_list[0][i]>0:
                     if i in effective_discard_types:
                         is_having_anpai_for_simotya = True
-                        break
+                        if not i in anpai_types_for_simotya:
+                            anpai_types_for_simotya.append(i)
         is_having_anpai_for_toimen = False
+        anpai_types_for_toimen = []
         if riichi[2][0]==1:
             for i in range(6,9):
                 for j in range(34):
                     if discarded_tiles[i][j]==1:
                         if j in effective_discard_types:
                             is_having_anpai_for_toimen = True
-                            break
+                            if not j in anpai_types_for_toimen:
+                                anpai_types_for_toimen.append(j)
             for i in range(34):
                 if after_riichi_discards_list[1][i]>0:
                     if i in effective_discard_types:
                         is_having_anpai_for_toimen = True
-                        break
+                        if not i in anpai_types_for_toimen:
+                            anpai_types_for_toimen.append(i)
         is_having_anpai_for_kamitya = False
+        anpai_types_for_kamitya = []
         if riichi[3][0]==1:
             for i in range(9,12):
                 for j in range(34):
                     if discarded_tiles[i][j]==1:
                         if j in effective_discard_types:
                             is_having_anpai_for_kamitya = True
-                            break
+                            if not j in anpai_types_for_kamitya:
+                                anpai_types_for_kamitya.append(j)
             for i in range(34):
                 if after_riichi_discards_list[2][i]>0:
                     if i in effective_discard_types:
                         is_having_anpai_for_kamitya = True
-                        break
-        
+                        if not i in anpai_types_for_kamitya:
+                            anpai_types_for_kamitya.append(i)
+        is_having_anpai_for_simotya_and_toimen = False
+        is_having_anpai_for_simotya_and_kamitya = False
+        is_having_anpai_for_toimen_and_kamitya = False
+        is_having_anpai_for_all = False
+        if riichi[1][0]==1 and riichi[2][0]==1:
+            for s in anpai_types_for_simotya:
+                for t in anpai_types_for_toimen:
+                    if s==t:
+                        is_having_anpai_for_simotya_and_toimen = True
+        if riichi[1][0]==1 and riichi[3][0]==1:
+            for s in anpai_types_for_simotya:
+                for k in anpai_types_for_kamitya:
+                    if s==k:
+                        is_having_anpai_for_simotya_and_kamitya = True
+        if riichi[2][0]==1 and riichi[3][0]==1:
+            for t in anpai_types_for_toimen:
+                for k in anpai_types_for_kamitya:
+                    if t==k:
+                        is_having_anpai_for_toimen_and_kamitya = True
+        if riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1:
+            for s in anpai_types_for_simotya:
+                for t in anpai_types_for_toimen:
+                    for k in anpai_types_for_kamitya:
+                        if s==t and t==k:
+                            is_having_anpai_for_all = True
+
         # ベタ降り
         if (not is_last_round_last_rank) and (((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[2+adjust_by_dora][0]==1 and dealer_num!=0)
             or ((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[3+adjust_by_dora][0]==1 and dealer_num==0)
             or (((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)) and shanten[1+adjust_by_dora][0]==1)
             or ((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[1+adjust_by_dora][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>=18000))
-            or ((my_rank==1 and round[6][0]==1 and dealer_num==0) and (-diff_ten(tens,my_rank,2))>(7700+kyotaku_num*1000+honba_num*300) and ((riichi[1][0]==1 and (-diff_ten(tens,my_rank,simotya_rank)>(12000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and (-diff_ten(tens,my_rank,toimen_rank)>(12000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(12000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+            or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(8000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1)
+            or ((my_rank==1 and round[6][0]==1 and dealer_num==0) and ((riichi[1][0]==1 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
             or ((my_rank==1 and round[6][0]==1 and dealer_num!=0) and ((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)) and shanten[0][0]==1)
             ):
             if len(effective_discards)>0:
@@ -726,6 +761,14 @@ class MyAgent(CustomAgentBase):
                 elif riichi[2][0]==1 and is_having_anpai_for_toimen and riichi[1][0]==0 and riichi[3][0]==0:
                     discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
                 elif riichi[3][0]==1 and is_having_anpai_for_kamitya and riichi[1][0]==0 and riichi[2][0]==0:
+                    discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
+                elif riichi[1][0]==1 and riichi[2][0]==1 and is_having_anpai_for_simotya_and_toimen and riichi[3][0]==0:
+                    discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
+                elif riichi[1][0]==1 and riichi[3][0]==1 and is_having_anpai_for_simotya_and_kamitya and riichi[2][0]==0:
+                    discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
+                elif riichi[2][0]==1 and riichi[3][0]==1 and is_having_anpai_for_toimen_and_kamitya and riichi[1][0]==0:
+                    discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
+                elif riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1 and is_having_anpai_for_all:
                     discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
             return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
         for i in yakuhai: # 既に鳴いているときは対子役牌を捨てない

@@ -92,10 +92,10 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                 danger_list_3[dora]+=0.5
 
             if who[1][0]==1: # 下家リーチ
-                danger_list_1[34] = 8
+                danger_list_1[34] = 100
                 if when_riichi[0] > 45:
                     for i in range(27,34):
-                        danger_list_1[i] *= 1.5
+                        danger_list_1[i] *= 3
             else:
                 for i in range(27,34):
                     danger_list_1[i] /= 2 # 字牌の危険度を一律下げる
@@ -153,10 +153,10 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                             danger_list_1[i+2] *= 6
 
             if who[2][0]==1: # 対面リーチ
-                danger_list_2[34] = 8
+                danger_list_2[34] = 100
                 if when_riichi[1] > 45:
                     for i in range(27,34):
-                        danger_list_2[i] *= 1.5
+                        danger_list_2[i] *= 3
             else:
                 for i in range(27,34):
                     danger_list_2[i] /= 2 # 字牌の危険度を一律下げる
@@ -199,9 +199,9 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                         if remaining_tiles[0][i-2]<=1:
                             danger_list_2[i-2] /= 5
                         if remaining_tiles[0][i-1]>=2 and discard_list_2[i-2]==1:
-                            danger_list_2[i-1] *= 6
+                            danger_list_2[i-1] *= 3
                         elif remaining_tiles[0][i-2]>=2 and discard_list_2[i-1]==1:
-                            danger_list_2[i-2] *= 6
+                            danger_list_2[i-2] *= 3
                 elif i in [6,15,24]:
                     if remaining_tiles[0][i]==0:
                         if remaining_tiles[0][i+1]<=1:
@@ -209,15 +209,15 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                         if remaining_tiles[0][i+2]<=1:
                             danger_list_2[i+2] /= 5
                         if remaining_tiles[0][i+1]>=2 and discard_list_2[i+2]==1:
-                            danger_list_2[i+1] *= 6
+                            danger_list_2[i+1] *= 3
                         elif remaining_tiles[0][i+2]>=2 and discard_list_2[i+1]==1:
-                            danger_list_2[i+2] *= 6
+                            danger_list_2[i+2] *= 3
 
             if who[3][0]==1: # 上家リーチ
-                danger_list_3[34] = 8
+                danger_list_3[34] = 100
                 if when_riichi[2] > 45:
                     for i in range(27,34):
-                        danger_list_3[i] *= 1.5
+                        danger_list_3[i] *= 3
             else:
                 for i in range(27,34):
                     danger_list_3[i] /= 2 # 字牌の危険度を一律下げる
@@ -260,9 +260,9 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                         if remaining_tiles[0][i-2]<=1:
                             danger_list_3[i-2] /= 5
                         if remaining_tiles[0][i-1]>=2 and discard_list_3[i-2]==1:
-                            danger_list_3[i-1] *= 6
+                            danger_list_3[i-1] *= 3
                         elif remaining_tiles[0][i-2]>=2 and discard_list_3[i-1]==1:
-                            danger_list_3[i-2] *= 6
+                            danger_list_3[i-2] *= 3
                 elif i in [6,15,24]:
                     if remaining_tiles[0][i]==0:
                         if remaining_tiles[0][i+1]<=1:
@@ -270,9 +270,9 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                         if remaining_tiles[0][i+2]<=1:
                             danger_list_3[i+2] /= 5
                         if remaining_tiles[0][i+1]>=2 and discard_list_3[i+2]==1:
-                            danger_list_3[i+1] *= 6
+                            danger_list_3[i+1] *= 3
                         elif remaining_tiles[0][i+2]>=2 and discard_list_3[i+1]==1:
-                            danger_list_3[i+2] *= 6
+                            danger_list_3[i+2] *= 3
 
             for i in range(34):
                 if (discard_list_1[i]==1 and discard_list_2[i]==1 and discard_list_3[i]==1):
@@ -280,23 +280,23 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
             
             for i in range(27,34):
                 if remaining_tiles[0][i] == 3:
-                    adjust_danger_list[i] = 1.5
+                    adjust_danger_list[i] = 6
                 elif remaining_tiles[0][i] == 2:
                     if zihai_discard_list[i]==1:
                         adjust_danger_list[i] = 0.2
                     else:
-                        adjust_danger_list[i] = 1.2
+                        adjust_danger_list[i] = 3
                 elif remaining_tiles[0][i] == 1:
                     adjust_danger_list[i] = 0.1
                 elif remaining_tiles[0][i] == 0:
                     adjust_danger_list[i] = 0
             
             if dealer==1:
-                danger_list_1[34] *= 1.3
+                danger_list_1[34] *= 2
             elif dealer==2:
-                danger_list_2[34] *= 1.3
+                danger_list_2[34] *= 2
             elif dealer==3:
-                danger_list_3[34] *= 1.3
+                danger_list_3[34] *= 2
 
             danger_sum = [(x*danger_list_1[34]+y*danger_list_2[34]+z*danger_list_3[34])*w for (x,y,z,w) in zip(danger_list_1[:34],danger_list_2[:34],danger_list_3[:34],adjust_danger_list)]
             for i in range(34):
