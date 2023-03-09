@@ -22,6 +22,7 @@ from mjx.event import Event
 from discard import *
 from search_suzi import *
 from check_ten import is_possible_to_rank_up,diff_ten
+from action_type_def import ActionModeType,TargetYakuType
 
 from server import convert_log
 from client.agent import CustomAgentBase
@@ -35,8 +36,8 @@ class MyAgent(CustomAgentBase):
     def __init__(self):
         super().__init__()
         self.remaining_tiles = [[4 for _ in range(34)],[1,1,1]]
-        self.action_mode = "menzen"
-        self.target_yaku = ""
+        self.action_mode = ActionModeType.MENZEN
+        self.target_yaku = TargetYakuType.NO_TARGET
         self.remaining_tiles_num = 70
         self.when_riichi = [-1,-1,-1]
         self.before_riichi_discards_list = [[0 for _ in range(34)] for _ in range(3)]
@@ -249,8 +250,8 @@ class MyAgent(CustomAgentBase):
                     after_riichi_discards_list[i][j] = ignored_discards[j]-self.before_riichi_discards_list[i][j]
 
         # 行動選択処理
-        self.action_mode = "menzen"
-        self.target_yaku = ""
+        self.action_mode = ActionModeType.MENZEN
+        self.target_yaku = TargetYakuType.NO_TARGET
         dangerous_situation = riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1 or self.remaining_tiles_num<15 # 誰かがリーチ、または流局間際である
         legal_actions = obs.legal_actions()
 
@@ -262,15 +263,15 @@ class MyAgent(CustomAgentBase):
         kyusyu_actions = [a for a in legal_actions if a.type() == ActionType.ABORTIVE_DRAW_NINE_TERMINALS]
         if len(kyusyu_actions) >= 1:
             # 1位,2位のときは流局させる
-            if ranking[1][0]==1:
-                self.action_mode = "kyusyu"
+            if my_rank>=3:
+                self.action_mode = ActionModeType.KOKUSHI
             else:
                 count_kyusyu = 0
                 for i in yaotyu:
                     if hand[0][i]==1:
                         count_kyusyu += 1
                 if count_kyusyu>=11:
-                    self.action_mode = "kyusyu"
+                    self.action_mode = ActionModeType.KOKUSHI
                 else:
                     return kyusyu_actions[0]
         
@@ -357,10 +358,10 @@ class MyAgent(CustomAgentBase):
             if hand[0][i]==1:
                 count_kyusyu += 1
         if count_kyusyu>=9:
-            self.action_mode = "kyusyu"
+            self.action_mode = ActionModeType.KOKUSHI
             for i in yaotyu:
                 if self.remaining_tiles[0][i]==0 and hand[0][i]==0: # 牌が売り切れていたら
-                    self.action_mode = "menzen"
+                    self.action_mode = ActionModeType.MENZEN
 
         # 副露の数をカウント
         count_furo = 0
@@ -380,15 +381,15 @@ class MyAgent(CustomAgentBase):
         for i in count_furo_list:
             count_furo += i
         if count_furo>0:
-            self.action_mode = "furo" # 鳴いている
+            self.action_mode = ActionModeType.FURO # 鳴いている
             for i in yakuhai:
                 if count_furo_list[i]>=3:
-                    self.action_mode = "yakuhai_furo" # 既に役がある鳴き
+                    self.action_mode = ActionModeType.FURO_YAKUHAI # 既に役がある鳴き
 
         # 役牌暗刻持ち、かつドラを2枚以上持っていれば鳴きを視野に入れる
         for i in yakuhai:
             if hand[2][i]==1 and dora_num_in_hand>=2:
-                self.action_mode = "yakuhai_furo"
+                self.action_mode = ActionModeType.FURO_YAKUHAI
         
         # 混一色,清一色を目指すかどうかの判断
         manzu_counter = 0
@@ -436,23 +437,23 @@ class MyAgent(CustomAgentBase):
         for i in zihai:
             remaining_zihai_num += self.remaining_tiles[0][i]
         if zihai_toitsu_counter*2+zihai_anko_counter*3+furo_zihai_counter>=10 and remaining_zihai_num>13 and furo_manzu_counter==0 and furo_pinzu_counter==0 and furo_sozu_counter==0:
-            self.target_yaku = "tsuiso"
+            self.target_yaku = TargetYakuType.TSUISO
         elif manzu_counter+furo_manzu_counter+zihai_toitsu_counter*2+zihai_anko_counter*3+furo_zihai_counter>=11 and ((manzu_counter>=pinzu_counter and manzu_counter>=sozu_counter) or furo_manzu_counter>0) and furo_pinzu_counter==0 and furo_sozu_counter==0:
-            self.target_yaku = "some_m"
+            self.target_yaku = TargetYakuType.HONITSU_MANZU
             if manzu_counter+furo_manzu_counter>=10 and furo_zihai_counter==0 and zihai_anko_counter==0:
-                self.target_yaku = "tin_m"
+                self.target_yaku = TargetYakuType.CHINITSU_MANZU
         elif pinzu_counter+furo_pinzu_counter+zihai_toitsu_counter*2+zihai_anko_counter*3+furo_zihai_counter>=11 and ((pinzu_counter>=manzu_counter and pinzu_counter>=sozu_counter) or furo_pinzu_counter>0) and furo_manzu_counter==0 and furo_sozu_counter==0:
-            self.target_yaku = "some_p"
+            self.target_yaku = TargetYakuType.HONITSU_PINZU
             if pinzu_counter+furo_pinzu_counter>=10 and furo_zihai_counter==0 and zihai_anko_counter==0:
-                self.target_yaku = "tin_p"
+                self.target_yaku = TargetYakuType.CHINITSU_PINZU
         elif sozu_counter+furo_sozu_counter+zihai_toitsu_counter*2+zihai_anko_counter*3+furo_zihai_counter>=11 and ((sozu_counter>=manzu_counter and sozu_counter>=pinzu_counter) or furo_sozu_counter>0) and furo_manzu_counter==0 and furo_pinzu_counter==0:
-            self.target_yaku = "some_s"
+            self.target_yaku = TargetYakuType.HONITSU_SOZU
             if sozu_counter+furo_sozu_counter>=10 and furo_zihai_counter==0 and zihai_anko_counter==0:
-                self.target_yaku = "tin_s"
+                self.target_yaku = TargetYakuType.CHINITSU_SOZU
 
         
         # 国士無双用の例外処理
-        if self.action_mode == "kyusyu":
+        if self.action_mode == ActionModeType.KOKUSHI:
             # ポン,チー,カンの鳴きはパス
             steal_actions = [a for a in legal_actions if a.type() in [ActionType.PON, ActionType.CHI, ActionType.OPEN_KAN]]
             if len(steal_actions) >= 1:
@@ -500,46 +501,46 @@ class MyAgent(CustomAgentBase):
         pon_actions = [a for a in legal_actions if a.type() == ActionType.PON]
         if len(pon_actions) >= 1:
             pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
-            if self.target_yaku=="tsuiso":
+            if self.target_yaku==TargetYakuType.TSUISO:
                 if pon_actions[0].open().last_tile().type() in zihai:
                     return pon_actions[0]
                 else:
                     return pass_action
 
-            if self.target_yaku=="tin_m":
+            if self.target_yaku==TargetYakuType.CHINITSU_MANZU:
                 if pon_actions[0].open().last_tile().type() in manzu and pon_actions[0].open().last_tile().type() in effective_draw_types:
                     return pon_actions[0]
                 else:
                     return pass_action
-            elif self.target_yaku=="some_m":
+            elif self.target_yaku==TargetYakuType.HONITSU_MANZU:
                 if (pon_actions[0].open().last_tile().type() in manzu or pon_actions[0].open().last_tile().type() in zihai) and pon_actions[0].open().last_tile().type() in effective_draw_types:
                     return pon_actions[0]
                 else:
                     return pass_action
-            elif self.target_yaku=="tin_p":
+            elif self.target_yaku==TargetYakuType.CHINITSU_PINZU:
                 if pon_actions[0].open().last_tile().type() in pinzu and pon_actions[0].open().last_tile().type() in effective_draw_types:
                     return pon_actions[0]
                 else:
                     return pass_action
-            elif self.target_yaku=="some_p":
+            elif self.target_yaku==TargetYakuType.HONITSU_PINZU:
                 if (pon_actions[0].open().last_tile().type() in pinzu or pon_actions[0].open().last_tile().type() in zihai) and pon_actions[0].open().last_tile().type() in effective_draw_types:
                     return pon_actions[0]
                 else:
                     return pass_action
-            elif self.target_yaku=="tin_s":
+            elif self.target_yaku==TargetYakuType.CHINITSU_SOZU:
                 if pon_actions[0].open().last_tile().type() in sozu and pon_actions[0].open().last_tile().type() in effective_draw_types:
                     return pon_actions[0]
                 else:
                     return pass_action
-            elif self.target_yaku=="some_s":
+            elif self.target_yaku==TargetYakuType.HONITSU_SOZU:
                 if (pon_actions[0].open().last_tile().type() in sozu or pon_actions[0].open().last_tile().type() in zihai) and pon_actions[0].open().last_tile().type() in effective_draw_types:
                     return pon_actions[0]
                 else:
                     return pass_action
 
             if pon_actions[0].open().last_tile().type() in effective_draw_types:
-                if self.action_mode=="yakuhai_furo" or pon_actions[0].open().last_tile().type() in yakuhai:
-                    if is_last_round_last_rank and (pon_actions[0].open().last_tile().type() in yakuhai) and (not self.action_mode in ["furo","yakuhai_furo"]) and (not is_possible_to_rank_up(tens,my_rank,dora_total_num,dealer_num,kyotaku,honba)):
+                if self.action_mode==ActionModeType.FURO_YAKUHAI or pon_actions[0].open().last_tile().type() in yakuhai:
+                    if is_last_round_last_rank and (pon_actions[0].open().last_tile().type() in yakuhai) and (not self.action_mode in [ActionModeType.FURO,ActionModeType.FURO_YAKUHAI]) and (not is_possible_to_rank_up(tens,my_rank,dora_total_num,dealer_num,kyotaku,honba)):
                         return pass_action
                     return pon_actions[0]
 
@@ -552,15 +553,15 @@ class MyAgent(CustomAgentBase):
 
             if count_toitsu==1:
                 if toitsu_feat[0] in yakuhai:
-                    if is_last_round_last_rank and (not self.action_mode in ["furo","yakuhai_furo"]) and (not is_possible_to_rank_up(tens,my_rank,dora_total_num,dealer_num,kyotaku,honba)):
+                    if is_last_round_last_rank and (not self.action_mode in [ActionModeType.FURO,ActionModeType.FURO_YAKUHAI]) and (not is_possible_to_rank_up(tens,my_rank,dora_total_num,dealer_num,kyotaku,honba)):
                         return pass_action
                     return pon_actions[0]
             elif count_toitsu>=2:
                 for a in toitsu_feat:
-                    if (a in yakuhai and self.remaining_tiles[0][a] != 0) or self.action_mode=="yakuhai_furo":
-                        if (a in yakuhai) and (self.remaining_tiles[0][a] != 0) and self.action_mode=="furo":
+                    if (a in yakuhai and self.remaining_tiles[0][a] != 0) or self.action_mode==ActionModeType.FURO_YAKUHAI:
+                        if (a in yakuhai) and (self.remaining_tiles[0][a] != 0) and self.action_mode==ActionModeType.FURO:
                             return pon_actions[0]
-                        if is_last_round_last_rank and (a in yakuhai) and (self.remaining_tiles[0][a] != 0) and self.action_mode!="yakuhai_furo":
+                        if is_last_round_last_rank and (a in yakuhai) and (self.remaining_tiles[0][a] != 0) and self.action_mode!=ActionModeType.FURO_YAKUHAI:
                             if is_possible_to_rank_up(tens,my_rank,dora_total_num,dealer_num,kyotaku,honba):
                                 return pon_actions[0]
                             else:
@@ -574,26 +575,26 @@ class MyAgent(CustomAgentBase):
         if len(chi_actions) >= 1:
             pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
             last_tile = chi_actions[0].open().last_tile()
-            if self.target_yaku=="tsuiso":
+            if self.target_yaku==TargetYakuType.TSUISO:
                 return pass_action
-            elif self.target_yaku=="tin_m" or self.target_yaku=="some_m":
+            elif self.target_yaku==TargetYakuType.CHINITSU_MANZU or self.target_yaku==TargetYakuType.HONITSU_MANZU:
                 if last_tile.type() in manzu and last_tile.type() in effective_draw_types:
                     return chi_actions[0]
                 else:
                     pass_action
-            elif self.target_yaku=="tin_p" or self.target_yaku=="some_p":
+            elif self.target_yaku==TargetYakuType.CHINITSU_PINZU or self.target_yaku==TargetYakuType.HONITSU_PINZU:
                 if last_tile.type() in pinzu and last_tile.type() in effective_draw_types:
                     return chi_actions[0]
                 else:
                     pass_action
-            elif self.target_yaku=="tin_s" or self.target_yaku=="some_s":
+            elif self.target_yaku==TargetYakuType.CHINITSU_SOZU or self.target_yaku==TargetYakuType.HONITSU_SOZU:
                 if last_tile.type() in sozu and last_tile.type() in effective_draw_types:
                     return chi_actions[0]
                 else:
                     pass_action
 
             if last_tile.type() in effective_draw_types:
-                if self.action_mode=="yakuhai_furo":
+                if self.action_mode==ActionModeType.FURO_YAKUHAI:
                     return chi_actions[0]
                 else:
                     return pass_action
@@ -623,7 +624,7 @@ class MyAgent(CustomAgentBase):
                     if last_tile.type() in doras or last_tile.is_red():
                         is_anko_tile_having = False
                 
-                if self.action_mode=="yakuhai_furo" and (not is_last_tile_having) and (not is_anko_tile_having):
+                if self.action_mode==ActionModeType.FURO_YAKUHAI and (not is_last_tile_having) and (not is_anko_tile_having):
                     return chi_actions[max_doras_index_of_chi_actions]
                 else:
                     return pass_action
@@ -633,7 +634,7 @@ class MyAgent(CustomAgentBase):
         # 明槓の処理
         open_kan_actions = [a for a in legal_actions if a.type() == ActionType.OPEN_KAN]
         if len(open_kan_actions) >= 1:
-            if self.action_mode=="yakuhai_furo":
+            if self.action_mode==ActionModeType.FURO_YAKUHAI and (riichi[1][0]==0 and riichi[2][0]==0 and riichi[3][0]==0):
                 return open_kan_actions[0]
             else:
                 pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
@@ -678,10 +679,12 @@ class MyAgent(CustomAgentBase):
                     if discarded_tiles[i][j]==1:
                         if j in effective_discard_types:
                             is_having_anpai_for_simotya = True
+                            break
             for i in range(34):
                 if after_riichi_discards_list[0][i]>0:
                     if i in effective_discard_types:
                         is_having_anpai_for_simotya = True
+                        break
         is_having_anpai_for_toimen = False
         if riichi[2][0]==1:
             for i in range(6,9):
@@ -689,10 +692,12 @@ class MyAgent(CustomAgentBase):
                     if discarded_tiles[i][j]==1:
                         if j in effective_discard_types:
                             is_having_anpai_for_toimen = True
+                            break
             for i in range(34):
                 if after_riichi_discards_list[1][i]>0:
                     if i in effective_discard_types:
                         is_having_anpai_for_toimen = True
+                        break
         is_having_anpai_for_kamitya = False
         if riichi[3][0]==1:
             for i in range(9,12):
@@ -700,10 +705,12 @@ class MyAgent(CustomAgentBase):
                     if discarded_tiles[i][j]==1:
                         if j in effective_discard_types:
                             is_having_anpai_for_kamitya = True
+                            break
             for i in range(34):
                 if after_riichi_discards_list[2][i]>0:
                     if i in effective_discard_types:
                         is_having_anpai_for_kamitya = True
+                        break
         
         # ベタ降り
         if (not is_last_round_last_rank) and (((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[2+adjust_by_dora][0]==1 and dealer_num!=0)
@@ -724,34 +731,34 @@ class MyAgent(CustomAgentBase):
         for i in yakuhai: # 既に鳴いているときは対子役牌を捨てない
             for a in effective_discards:
                 if a.tile().type()==i:
-                    if hand[1][i]==1 and hand[2][i]==0 and self.action_mode=="furo" and (not self.target_yaku in ["tin_m","tin_p","tin_s"]):
+                    if hand[1][i]==1 and hand[2][i]==0 and self.action_mode==ActionModeType.FURO and (not self.target_yaku in [TargetYakuType.CHINITSU_MANZU,TargetYakuType.CHINITSU_PINZU,TargetYakuType.CHINITSU_SOZU]):
                         effective_discards.remove(a)
         for i in zihai: # 対子で持っているが売り切れている字牌は捨てる
             if (effective_draw[i]==1 or hand[2][i]==0) and self.remaining_tiles[0][i]==0:
                 effective_zihai_discards = [a for a in legal_discards if a.tile().type() == i]
                 for a in effective_zihai_discards:
                     effective_discards.append(a)
-        if self.target_yaku=="tin_m":
+        if self.target_yaku==TargetYakuType.CHINITSU_MANZU:
             tinitsu_discards = [a for a in legal_discards if (a.tile().type() in pinzu) or (a.tile().type() in sozu) or (a.tile().type() in zihai)]
             if len(tinitsu_discards)>0:
                 effective_discards = tinitsu_discards
-        elif self.target_yaku=="tin_p":
+        elif self.target_yaku==TargetYakuType.CHINITSU_PINZU:
             tinitsu_discards = [a for a in legal_discards if (a.tile().type() in manzu) or (a.tile().type() in sozu) or (a.tile().type() in zihai)]
             if len(tinitsu_discards)>0:
                 effective_discards = tinitsu_discards
-        elif self.target_yaku=="tin_s":
+        elif self.target_yaku==TargetYakuType.CHINITSU_SOZU:
             tinitsu_discards = [a for a in legal_discards if (a.tile().type() in manzu) or (a.tile().type() in pinzu) or (a.tile().type() in zihai)]
             if len(tinitsu_discards)>0:
                 effective_discards = tinitsu_discards
-        elif self.target_yaku=="some_m":
+        elif self.target_yaku==TargetYakuType.HONITSU_MANZU:
             honitsu_discards = [a for a in legal_discards if (a.tile().type() in pinzu) or (a.tile().type() in sozu)]
             if len(honitsu_discards)>0:
                 effective_discards = honitsu_discards
-        elif self.target_yaku=="some_p":
+        elif self.target_yaku==TargetYakuType.HONITSU_PINZU:
             honitsu_discards = [a for a in legal_discards if (a.tile().type() in manzu) or (a.tile().type() in sozu)]
             if len(honitsu_discards)>0:
                 effective_discards = honitsu_discards
-        elif self.target_yaku=="some_s":
+        elif self.target_yaku==TargetYakuType.HONITSU_SOZU:
             honitsu_discards = [a for a in legal_discards if (a.tile().type() in manzu) or (a.tile().type() in pinzu)]
             if len(honitsu_discards)>0:
                 effective_discards = honitsu_discards
