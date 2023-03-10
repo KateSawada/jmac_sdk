@@ -41,7 +41,7 @@ class MyAgent(CustomAgentBase):
         self.remaining_tiles_num = 70
         self.when_riichi = [-1,-1,-1]
         self.before_riichi_discards_list = [[0 for _ in range(34)] for _ in range(3)]
-        self.my_playerId = -1
+        self.my_player_id = -1
     
     
     def act(self, obs: mjx.Observation) -> mjx.Action:                    
@@ -129,13 +129,13 @@ class MyAgent(CustomAgentBase):
                 yakuhai_kamitya.append(27)
         
         if round[0][0]==0 and dealer_num==0:
-            self.my_playerId = 0
+            self.my_player_id = 0
         elif round[0][0]==0 and dealer_num==1:
-            self.my_playerId = 3
+            self.my_player_id = 3
         elif round[0][0]==0 and dealer_num==2:
-            self.my_playerId = 2
+            self.my_player_id = 2
         elif round[0][0]==0 and dealer_num==3:
-            self.my_playerId = 1
+            self.my_player_id = 1
         
         for i in range(5):
             if kyotaku[i][0]==1:
@@ -158,7 +158,7 @@ class MyAgent(CustomAgentBase):
                 dora_num_in_hand += 1
         dora_total_num += dora_num_in_hand
         is_last_round_last_rank = False
-        if (round[6][0]==1 and ranking[2][0]==1) or (round[5][0]==1 and tens[self.my_playerId]<=2000):
+        if (round[6][0]==1 and ranking[2][0]==1) or (round[4][0]==1 and tens[self.my_player_id]<=3000+honba_num*100):
             is_last_round_last_rank = True
         
         for i in range(3):
@@ -207,47 +207,54 @@ class MyAgent(CustomAgentBase):
         ignored_discards = [0 for _ in range(34)]
 
         for e in obs.events():
-                if e.type() == EventType.DISCARD or e.type() == EventType.TSUMOGIRI:
-                    self.remaining_tiles_num -= 1
-                    self.remaining_tiles[0][e.tile().type()] -= 1
-                    ignored_discards[e.tile().type()] += 1
-                    if e.tile().is_red() and e.tile().type() == 4:
-                        self.remaining_tiles[1][0]=0
-                    elif e.tile().is_red() and e.tile().type() == 13:
-                        self.remaining_tiles[1][1]=0
-                    elif e.tile().is_red() and e.tile().type() == 22:
-                        self.remaining_tiles[1][2]=0
+            if e.type() == EventType.RIICHI:
+                if self.my_player_id==0:
+                    if e.who()==1:
+                        riichi[1][0] = 1
+                    elif e.who()==2:
+                        riichi[2][0] = 1
+                    elif e.who()==3:
+                        riichi[3][0] = 1
+                elif self.my_player_id==1:
+                    if e.who()==2:
+                        riichi[1][0] = 1
+                    elif e.who()==3:
+                        riichi[2][0] = 1
+                    if e.who()==0:
+                        riichi[3][0] = 1
+                elif self.my_player_id==2:
+                    if e.who()==3:
+                        riichi[1][0] = 1
+                    elif e.who()==0:
+                        riichi[2][0] = 1
+                    elif e.who()==1:
+                        riichi[3][0] = 1
+                elif self.my_player_id==3:
+                    if e.who()==0:
+                        riichi[1][0] = 1
+                    elif e.who()==1:
+                        riichi[2][0] = 1
+                    elif e.who()==2:
+                        riichi[3][0] = 1
 
-                elif e.type() in [
-                    EventType.CHI,
-                    EventType.PON,
-                    EventType.OPEN_KAN]:
-                    if e.type() != EventType.OPEN_KAN:
-                        self.remaining_tiles_num += 1
-                    for t in e.open().tiles():
-                        self.remaining_tiles[0][t.type()] -= 1
-                        if t.is_red() and t.type() == 4:
-                            self.remaining_tiles[1][0]=0
-                        elif t.is_red() and t.type() == 13:
-                            self.remaining_tiles[1][1]=0
-                        elif t.is_red() and t.type() == 22:
-                            self.remaining_tiles[1][2]=0
-                    self.remaining_tiles[0][e.open().last_tile().type()] += 1
-                
-                elif e.type() == EventType.CLOSED_KAN:
-                    self.remaining_tiles_num -= 1
-                    for t in e.open().tiles():
-                        self.remaining_tiles[0][t.type()] -= 1
-                        if t.is_red() and t.type() == 4:
-                            self.remaining_tiles[1][0]=0
-                        elif t.is_red() and t.type() == 13:
-                            self.remaining_tiles[1][1]=0
-                        elif t.is_red() and t.type() == 22:
-                            self.remaining_tiles[1][2]=0
-                
-                elif e.type() == EventType.ADDED_KAN:
-                    self.remaining_tiles_num -= 1
-                    t = e.open().last_tile()
+            if e.type() == EventType.DISCARD or e.type() == EventType.TSUMOGIRI:
+                self.remaining_tiles_num -= 1
+                self.remaining_tiles[0][e.tile().type()] -= 1
+                ignored_discards[e.tile().type()] += 1
+                if e.tile().is_red() and e.tile().type() == 4:
+                    self.remaining_tiles[1][0]=0
+                elif e.tile().is_red() and e.tile().type() == 13:
+                    self.remaining_tiles[1][1]=0
+                elif e.tile().is_red() and e.tile().type() == 22:
+                    self.remaining_tiles[1][2]=0
+
+            elif e.type() in [
+                EventType.CHI,
+                EventType.PON,
+                EventType.OPEN_KAN]:
+                if e.type() != EventType.OPEN_KAN:
+                    self.remaining_tiles_num += 1
+                for t in e.open().tiles():
                     self.remaining_tiles[0][t.type()] -= 1
                     if t.is_red() and t.type() == 4:
                         self.remaining_tiles[1][0]=0
@@ -255,6 +262,29 @@ class MyAgent(CustomAgentBase):
                         self.remaining_tiles[1][1]=0
                     elif t.is_red() and t.type() == 22:
                         self.remaining_tiles[1][2]=0
+                self.remaining_tiles[0][e.open().last_tile().type()] += 1
+            
+            elif e.type() == EventType.CLOSED_KAN:
+                self.remaining_tiles_num -= 1
+                for t in e.open().tiles():
+                    self.remaining_tiles[0][t.type()] -= 1
+                    if t.is_red() and t.type() == 4:
+                        self.remaining_tiles[1][0]=0
+                    elif t.is_red() and t.type() == 13:
+                        self.remaining_tiles[1][1]=0
+                    elif t.is_red() and t.type() == 22:
+                        self.remaining_tiles[1][2]=0
+            
+            elif e.type() == EventType.ADDED_KAN:
+                self.remaining_tiles_num -= 1
+                t = e.open().last_tile()
+                self.remaining_tiles[0][t.type()] -= 1
+                if t.is_red() and t.type() == 4:
+                    self.remaining_tiles[1][0]=0
+                elif t.is_red() and t.type() == 13:
+                    self.remaining_tiles[1][1]=0
+                elif t.is_red() and t.type() == 22:
+                    self.remaining_tiles[1][2]=0
 
         if self.remaining_tiles_num>=60:
             self.when_riichi = [-1,-1,-1]
@@ -310,12 +340,13 @@ class MyAgent(CustomAgentBase):
 
         # リーチの処理
         riichi_actions = [a for a in legal_actions if a.type() == ActionType.RIICHI]
-        if (((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(8000+kyotaku_num*1000+honba_num*300))
+        if (not is_last_round_last_rank) and (((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(8000+kyotaku_num*1000+honba_num*300))
             or ((my_rank==1 and round[6][0]==1 and dealer_num==0) and ((riichi[1][0]==1 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))))
             or ((my_rank==1 and round[6][0]==1 and dealer_num!=0) and ((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)))
             ):
             pass
         else:
+            print(len(riichi_actions))
             if len(riichi_actions) >= 1:
                 remaining_agarihai_num = 0
                 legal_discards = [a for a in legal_actions if a.type() in [ActionType.DISCARD, ActionType.TSUMOGIRI]]
@@ -848,8 +879,8 @@ class MyAgent(CustomAgentBase):
         # ベタ降り
         if (not is_last_round_last_rank) and (((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[2+adjust_by_dora][0]==1 and dealer_num!=0)
             or ((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[3+adjust_by_dora][0]==1 and dealer_num==0)
-            or (((riichi[1][0]==1 and riichi[2][0]==1) or (riichi[1][0]==1 and riichi[3][0]==1) or (riichi[2][0]==1 and riichi[3][0]==1)) and shanten[2+adjust_by_dora][0]==1)
-            or ((riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1) and shanten[1][0]==1)
+            or (((riichi[1][0]==1 and riichi[2][0]==1) or (riichi[1][0]==1 and riichi[3][0]==1) or (riichi[2][0]==1 and riichi[3][0]==1)) and shanten[1+adjust_by_dora][0]==1)
+            or ((riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1) and shanten[0][0]==1)
             or (((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)) and shanten[1+adjust_by_dora][0]==1)
             or ((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[1+adjust_by_dora][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>=18000))
             or (round[5][0]==1 and (riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[0][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>18000))
@@ -1111,4 +1142,3 @@ if __name__ == "__main__":
     print("3rd: "+str(round(int(result_rank.count('3'))*100/n_games,2))+"%")
     print("4th: "+str(round(int(result_rank.count('4'))*100/n_games,2))+"%")
     print("game has ended")
-

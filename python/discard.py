@@ -115,6 +115,10 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                         for suzi in check_suzi(i):
                             if suzi in yaotyu:
                                 danger_list_1[suzi] /= 4 # 牌の危険度を下げる(スジandヤオ九牌)
+                            elif suzi in [1,10,19]:
+                                danger_list_1[suzi] /= 3
+                            elif suzi in [7,16,25]:
+                                danger_list_1[suzi] /= 3
                             else:
                                 danger_list_1[suzi] /= 2 # 牌の危険度を下げる(スジ)
                 elif discard_list_1[i]==2: # 他家がリーチ後に捨てた
@@ -123,6 +127,10 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                         for suzi in check_suzi(i):
                             if suzi in yaotyu:
                                 danger_list_1[suzi] /= 3 # 牌の危険度を下げる(スジandヤオ九牌)
+                            elif suzi in [1,10,19]:
+                                danger_list_1[suzi] /= 2
+                            elif suzi in [7,16,25]:
+                                danger_list_1[suzi] /= 2
                             else:
                                 danger_list_1[suzi] /= 1.5 # 牌の危険度を下げる(スジ)
                 if i in [1,10,19]:
@@ -176,6 +184,10 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                         for suzi in check_suzi(i):
                             if suzi in yaotyu:
                                 danger_list_2[suzi] /= 4 # 牌の危険度を下げる(スジandヤオ九牌)
+                            elif suzi in [1,10,19]:
+                                danger_list_2[suzi] /= 3
+                            elif suzi in [7,16,25]:
+                                danger_list_2[suzi] /= 3
                             else:
                                 danger_list_2[suzi] /= 2 # 牌の危険度を下げる(スジ)
                 elif discard_list_2[i]==2: # 他家がリーチ後に捨てた
@@ -184,6 +196,10 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                         for suzi in check_suzi(i):
                             if suzi in yaotyu:
                                 danger_list_2[suzi] /= 3 # 牌の危険度を下げる(スジandヤオ九牌)
+                            elif suzi in [1,10,19]:
+                                danger_list_2[suzi] /= 2
+                            elif suzi in [7,16,25]:
+                                danger_list_2[suzi] /= 2
                             else:
                                 danger_list_2[suzi] /= 1.5 # 牌の危険度を下げる(スジ)
                 if i in [1,10,19]:
@@ -237,6 +253,10 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                         for suzi in check_suzi(i):
                             if suzi in yaotyu:
                                 danger_list_3[suzi] /= 4 # 牌の危険度を下げる(スジandヤオ九牌)
+                            elif suzi in [1,10,19]:
+                                danger_list_3[suzi] /= 3
+                            elif suzi in [7,16,25]:
+                                danger_list_3[suzi] /= 3
                             else:
                                 danger_list_3[suzi] /= 2 # 牌の危険度を下げる(スジ)
                 elif discard_list_3[i]==2: # 他家がリーチ後に捨てた
@@ -245,6 +265,10 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                         for suzi in check_suzi(i):
                             if suzi in yaotyu:
                                 danger_list_3[suzi] /= 3 # 牌の危険度を下げる(スジandヤオ九牌)
+                            elif suzi in [1,10,19]:
+                                danger_list_3[suzi] /= 2
+                            elif suzi in [7,16,25]:
+                                danger_list_3[suzi] /= 2
                             else:
                                 danger_list_3[suzi] /= 1.5 # 牌の危険度を下げる(スジ)
                 if i in [1,10,19]:
@@ -301,13 +325,16 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
             danger_sum = [(x*danger_list_1[34]+y*danger_list_2[34]+z*danger_list_3[34])*w for (x,y,z,w) in zip(danger_list_1[:34],danger_list_2[:34],danger_list_3[:34],adjust_danger_list)]
             for i in range(34):
                 danger_point[i] = danger_sum[i]
+                print(str(i)+": "+str(danger_point[i]))
 
             # 最も安全な牌を選択
             danger_min = 1000000000
             danger_min_action = hand_discards[0]
             for a in hand_discards:
+                print(str(a.tile().type())+": "+str(danger_point[a.tile().type()]))
                 if danger_point[a.tile().type()]<danger_min:
                     danger_min = danger_point[a.tile().type()]
                     danger_min_action = a
+            print("selected: "+str(danger_min_action.tile().type()))
             
             return danger_min_action
