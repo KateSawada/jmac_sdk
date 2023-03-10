@@ -910,6 +910,48 @@ class MyAgent(CustomAgentBase):
         
         if len(effective_discards) > 0:
             if len(effective_discards) > 1:
+                if len(effective_discards)==2 and shanten[1][0]==0:
+                    toitsu_count = 0
+                    for i in range(34):
+                        if hand[1][i]==1 and hand[2][i]==0:
+                            toitsu_count += 1
+                    if toitsu_count>=6: # 七対子のリーチ
+                        a = effective_discards[0]
+                        b = effective_discards[1]
+                        count_a_suzi_in_my_discarded_tiles = 0
+                        count_b_suzi_in_my_discarded_tiles = 0
+                        for x in check_suzi(a.tile().type()):
+                            if x in my_discarded_tiles_types:
+                                count_a_suzi_in_my_discarded_tiles += 1
+                        for y in check_suzi(b.tile().type()):
+                            if y in my_discarded_tiles_types:
+                                count_b_suzi_in_my_discarded_tiles += 1
+                        if (a.tile().type() in doras or a.tile().is_red()) and self.remaining_tiles[0][a.tile().type()]!=0 and ((not (b.tile().type() in doras)) and (not b.tile().is_red())):
+                            return b
+                        elif (b.tile().type() in doras or b.tile().is_red()) and self.remaining_tiles[0][b.tile().type()]!=0 and ((not (a.tile().type() in doras)) and (not a.tile().is_red())):
+                            return a
+                        elif (a.tile().type() in doras or a.tile().is_red()) and (b.tile().type() in doras or b.tile().is_red()):
+                            if (a.tile().type() in doras and a.tile().is_red()) and self.remaining_tiles[0][a.tile().type()]!=0 and (((b.tile().type() in doras) and (not b.tile().is_red())) or (b.tile().is_red() and (not (b.tile().type() in doras)))):
+                                return b
+                            elif (b.tile().type() in doras and b.tile().is_red()) and self.remaining_tiles[0][b.tile().type()]!=0 and (((a.tile().type() in doras) and (not a.tile().is_red())) or (a.tile().is_red() and (not (a.tile().type() in doras)))):
+                                return a
+                            else:
+                                if a.tile().type() in doras and self.remaining_tiles[0][b.tile().type()]!=0 and b.tile().is_red():
+                                    return a
+                                elif b.tile().type() in doras and self.remaining_tiles[0][a.tile().type()]!=0 and a.tile().is_red():
+                                    return b
+                                elif self.remaining_tiles[0][a.tile().type()]>self.remaining_tiles[0][b.tile().type()]:
+                                    return b
+                                elif self.remaining_tiles[0][a.tile().type()]<=self.remaining_tiles[0][b.tile().type()]:
+                                    return a
+                        elif self.remaining_tiles[0][a.tile().type()]>=1 and (not (a.tile().type() in my_discarded_tiles_types)) and (count_a_suzi_in_my_discarded_tiles>=count_b_suzi_in_my_discarded_tiles):
+                            return b
+                        elif self.remaining_tiles[0][b.tile().type()]>=1 and (not (b.tile().type() in my_discarded_tiles_types)) and (count_a_suzi_in_my_discarded_tiles<count_b_suzi_in_my_discarded_tiles):
+                            return a
+                        elif self.remaining_tiles[0][a.tile().type()]>self.remaining_tiles[0][b.tile().type()]:
+                            return b
+                        elif self.remaining_tiles[0][a.tile().type()]<=self.remaining_tiles[0][a.tile().type()]:
+                            return a
                 for a in effective_discards:
                     if a.tile().type() in doras or a.tile().is_red(): # ドラは捨てない（他の選択肢がある場合）
                         if (a.tile().type() in zihai) and ((hand[0][a.tile().type()]==1 and hand[1][a.tile().type()]==0 and self.remaining_tiles[0][a.tile().type()]>=2) or (hand[1][a.tile().type()]==1 and hand[2][a.tile().type()]==0 and self.remaining_tiles[0][a.tile().type()]>=1)):
