@@ -325,16 +325,13 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
             danger_sum = [(x*danger_list_1[34]+y*danger_list_2[34]+z*danger_list_3[34])*w for (x,y,z,w) in zip(danger_list_1[:34],danger_list_2[:34],danger_list_3[:34],adjust_danger_list)]
             for i in range(34):
                 danger_point[i] = danger_sum[i]
-                print(str(i)+": "+str(danger_point[i]))
 
             # 最も安全な牌を選択
             danger_min = 1000000000
             danger_min_action = hand_discards[0]
             for a in hand_discards:
-                print(str(a.tile().type())+": "+str(danger_point[a.tile().type()]))
                 if danger_point[a.tile().type()]<danger_min:
                     danger_min = danger_point[a.tile().type()]
                     danger_min_action = a
-            print("selected: "+str(danger_min_action.tile().type()))
             
             return danger_min_action
