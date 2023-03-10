@@ -310,76 +310,54 @@ class MyAgent(CustomAgentBase):
 
         # リーチの処理
         riichi_actions = [a for a in legal_actions if a.type() == ActionType.RIICHI]
-        if len(riichi_actions) == 1:
-            remaining_agarihai_num = 0
-            legal_discards = [a for a in legal_actions if a.type() in [ActionType.DISCARD, ActionType.TSUMOGIRI]]
-            effective_discard_types = obs.curr_hand().effective_discard_types()
-            effective_discards = [a for a in legal_discards if a.tile().type() in effective_discard_types]
-            for a in effective_draw_types:
-               remaining_agarihai_num+=self.remaining_tiles[0][a]
-            if remaining_agarihai_num==0: # アガり牌が存在しない
-                shanpon_count = 0
+        if (((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(8000+kyotaku_num*1000+honba_num*300))
+            or ((my_rank==1 and round[6][0]==1 and dealer_num==0) and ((riichi[1][0]==1 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))))
+            or ((my_rank==1 and round[6][0]==1 and dealer_num!=0) and ((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)))
+            ):
+            pass
+        else:
+            if len(riichi_actions) >= 1:
+                remaining_agarihai_num = 0
+                legal_discards = [a for a in legal_actions if a.type() in [ActionType.DISCARD, ActionType.TSUMOGIRI]]
+                effective_discard_types = obs.curr_hand().effective_discard_types()
+                effective_discards = [a for a in legal_discards if a.tile().type() in effective_discard_types]
                 for a in effective_draw_types:
-                    if hand[1][a]==1 and hand[2][a]==0:
-                        shanpon_count += 1
-                if shanpon_count >=2:
-                    change_wait_discard = [a for a in legal_discards if a.tile().type() in effective_draw_types]
-                    return discard(riichi,discarded_tiles,change_wait_discard,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
-                if len(effective_discards)>0:
-                    return discard(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
-                else:
-                    change_wait_discard_types = []
+                    remaining_agarihai_num+=self.remaining_tiles[0][a]
+                if remaining_agarihai_num==0: # アガり牌が存在しない
+                    shanpon_count = 0
                     for a in effective_draw_types:
-                        for e in check_effective_hai(a):
-                            if not e in change_wait_discard_types:
-                                change_wait_discard_types.append(e)
-                    change_wait_discards = [a for a in legal_discards if a.tile().type() in change_wait_discard_types]
-                    if len(change_wait_discards)>0 and riichi[1][0]==0 and riichi[2][0]==0 and riichi[3][0]==0:
-                        return discard(riichi,discarded_tiles,change_wait_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
+                        if hand[1][a]==1 and hand[2][a]==0:
+                            shanpon_count += 1
+                    if shanpon_count >=2:
+                        change_wait_discard = [a for a in legal_discards if a.tile().type() in effective_draw_types]
+                        return discard(riichi,discarded_tiles,change_wait_discard,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
+                    if len(effective_discards)>0:
+                        return discard(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
                     else:
-                        return discard(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
-            else:
-                is_furiten = False
-                for a in effective_draw_types:
-                    if a in my_discarded_tiles_types:
-                        is_furiten = True
-                if is_furiten:
-                    count_kyusyu = 0
-                    for i in yaotyu:
-                        if hand[0][i]==1:
-                            count_kyusyu += 1
-                    if dora_num_in_hand>=2 or count_kyusyu>=12 or is_last_round_last_rank:
-                        return riichi_actions[0]
+                        change_wait_discard_types = []
+                        for a in effective_draw_types:
+                            for e in check_effective_hai(a):
+                                if not e in change_wait_discard_types:
+                                    change_wait_discard_types.append(e)
+                        change_wait_discards = [a for a in legal_discards if a.tile().type() in change_wait_discard_types]
+                        if len(change_wait_discards)>0 and riichi[1][0]==0 and riichi[2][0]==0 and riichi[3][0]==0:
+                            return discard(riichi,discarded_tiles,change_wait_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
+                        else:
+                            return discard(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
                 else:
-                    return riichi_actions[0]
-        elif len(riichi_actions) > 1:
-            list_of_effective_draw = []
-            legal_discards = [a for a in legal_actions if a.type() in [ActionType.DISCARD, ActionType.TSUMOGIRI]]
-            effective_discard_types = obs.curr_hand().effective_discard_types()
-            effective_discards = [a for a in legal_discards if a.tile().type() in effective_discard_types]
-            if len(effective_discards)>0:
-                for a in effective_discards:
-                    discard_num = a.tile().type()
-                    for i in range(4):
-                        if obs.MjxLargeV0().current_hand(obs)[3-i][discard_num]==1:
-                            obs.MjxLargeV0().current_hand(obs)[3-i][discard_num]=0
-                            ed = obs.MjxLargeV0().effective_draws(obs)[0]
-                            list_of_effective_draw.append(ed)
-                            obs.MjxLargeV0().current_hand(obs)[3-i][discard_num]=1
-                            break
-                number_of_effective_draw = [0 for _ in range(len(effective_discards))]
-                for i in list_of_effective_draw:
-                    for j in i:
-                        number_of_effective_draw[list_of_effective_draw.index(i)] += j
-                most_effective_riichi_action = riichi_actions[0]
-                max_number_of_effective_draw = -1
-                for i in number_of_effective_draw:
-                    if i > max_number_of_effective_draw:
-                        max_number_of_effective_draw = i
-                        most_effective_riichi_action = riichi_actions[number_of_effective_draw.index(i)]
-                return most_effective_riichi_action
-            else:
-                return riichi_actions[0]
+                    is_furiten = False
+                    for a in effective_draw_types:
+                        if a in my_discarded_tiles_types:
+                            is_furiten = True
+                    if is_furiten:
+                        count_kyusyu = 0
+                        for i in yaotyu:
+                            if hand[0][i]==1:
+                                count_kyusyu += 1
+                        if dora_num_in_hand>=2 or count_kyusyu>=12 or is_last_round_last_rank:
+                            return riichi_actions[0]
+                    else:
+                        return riichi_actions[0]
 
         count_kyusyu = 0
         for i in yaotyu:
@@ -437,7 +415,7 @@ class MyAgent(CustomAgentBase):
         for i in yakuhai_simotya:
             if count_furo_list_simotya[i]>=3:
                 is_yakuhai_furo_simotya = True
-        # 2鳴き以上, 役牌鳴き, ドラ3見え以上ならリーチ判定
+            # 2鳴き以上, 役牌鳴き, ドラ3見え以上ならリーチ判定
         if is_yakuhai_furo_simotya and count_dora_simotya>=3 and count_furo_simotya>=6:
             riichi[1][0] = 1
         
@@ -465,7 +443,7 @@ class MyAgent(CustomAgentBase):
         for i in yakuhai_toimen:
             if count_furo_list_toimen[i]>=3:
                 is_yakuhai_furo_toimen = True
-        # 2鳴き以上, 役牌鳴き, ドラ3見え以上ならリーチ判定
+            # 2鳴き以上, 役牌鳴き, ドラ3見え以上ならリーチ判定
         if is_yakuhai_furo_toimen and count_dora_toimen>=3 and count_furo_toimen>=6:
             riichi[2][0] = 1
         
@@ -493,7 +471,7 @@ class MyAgent(CustomAgentBase):
         for i in yakuhai_kamitya:
             if count_furo_list_kamitya[i]>=3:
                 is_yakuhai_furo_kamitya = True
-        # 2鳴き以上, 役牌鳴き, ドラ3見え以上ならリーチ判定
+            # 2鳴き以上, 役牌鳴き, ドラ3見え以上ならリーチ判定
         if is_yakuhai_furo_kamitya and count_dora_kamitya>=3 and count_furo_kamitya>=6:
             riichi[3][0] = 1
         
@@ -768,14 +746,23 @@ class MyAgent(CustomAgentBase):
             tile_type_of_closed_kan = closed_kan_actions[0].open().tiles_from_hand()[0].type()
             effective_discard_types = obs.curr_hand().effective_discard_types()
             if tile_type_of_closed_kan in zihai:
-                return closed_kan_actions[0] # 字牌は無条件で暗槓
+                if riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1:
+                    pass
+                else:
+                    return closed_kan_actions[0]
             # 順子の一部になっているときにはカンしない
             elif is_piece_of_syuntsu(hand,tile_type_of_closed_kan):
                 pass
             elif tile_type_of_closed_kan in effective_discard_types:
-                return closed_kan_actions[0]
+                if (riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[2][0]==1:
+                    pass
+                else:
+                    return closed_kan_actions[0]
             else:
-                return closed_kan_actions[0]
+                if (riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[2][0]==1:
+                    pass
+                else:
+                    return closed_kan_actions[0]
 
         # 打牌の処理
         adjust_by_dora = 0
@@ -861,6 +848,8 @@ class MyAgent(CustomAgentBase):
         # ベタ降り
         if (not is_last_round_last_rank) and (((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[2+adjust_by_dora][0]==1 and dealer_num!=0)
             or ((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[3+adjust_by_dora][0]==1 and dealer_num==0)
+            or (((riichi[1][0]==1 and riichi[2][0]==1) or (riichi[1][0]==1 and riichi[3][0]==1) or (riichi[2][0]==1 and riichi[3][0]==1)) and shanten[2+adjust_by_dora][0]==1)
+            or ((riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1) and shanten[1][0]==1)
             or (((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)) and shanten[1+adjust_by_dora][0]==1)
             or ((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[1+adjust_by_dora][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>=18000))
             or (round[5][0]==1 and (riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[0][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>18000))
