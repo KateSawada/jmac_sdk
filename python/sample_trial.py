@@ -75,6 +75,9 @@ class MyAgent(CustomAgentBase):
         yaotyu = [0,8,9,17,18,26,27,28,29,30,31,32,33]
         zihai = [27,28,29,30,31,32,33]
         yakuhai = [31,32,33]
+        yakuhai_simotya = [31,32,33]
+        yakuhai_toimen = [31,32,33]
+        yakuhai_kamitya = [31,32,33]
         # 自風,場風を役牌に追加
         if dealer[0][0]==1:
             dealer_num=0
@@ -87,18 +90,43 @@ class MyAgent(CustomAgentBase):
 
         if dealer_num==0:
             yakuhai.append(27)
+            yakuhai_simotya.append(28)
+            yakuhai_toimen.append(29)
+            yakuhai_kamitya.append(30)
         elif dealer_num==1:
             yakuhai.append(30)
+            yakuhai_simotya.append(27)
+            yakuhai_toimen.append(28)
+            yakuhai_kamitya.append(29)
         elif dealer_num==2:
             yakuhai.append(29)
+            yakuhai_simotya.append(30)
+            yakuhai_toimen.append(27)
+            yakuhai_kamitya.append(28)
         elif dealer_num==3:
             yakuhai.append(28)
+            yakuhai_simotya.append(29)
+            yakuhai_toimen.append(30)
+            yakuhai_kamitya.append(27)
         if round[3][0]==1:
             if not (28 in yakuhai):
                 yakuhai.append(28)
+            if not (28 in yakuhai_simotya):
+                yakuhai_simotya.append(28)
+            if not (28 in yakuhai_toimen):
+                yakuhai_toimen.append(28)
+            if not (28 in yakuhai_kamitya):
+                yakuhai_kamitya.append(28)
+
         else:
             if not (27 in yakuhai):
                 yakuhai.append(27)
+            if not (27 in yakuhai_simotya):
+                yakuhai_simotya.append(27)
+            if not (27 in yakuhai_toimen):
+                yakuhai_toimen.append(27)
+            if not (27 in yakuhai_kamitya):
+                yakuhai_kamitya.append(27)
         
         if round[0][0]==0 and dealer_num==0:
             self.my_playerId = 0
@@ -280,7 +308,7 @@ class MyAgent(CustomAgentBase):
         if len(win_actions) >= 1:
             return win_actions[0]
 
-        # リーチできるときはリーチする
+        # リーチの処理
         riichi_actions = [a for a in legal_actions if a.type() == ActionType.RIICHI]
         if len(riichi_actions) == 1:
             remaining_agarihai_num = 0
@@ -369,7 +397,7 @@ class MyAgent(CustomAgentBase):
         for i in range(34):
             for j in range(4):
                 if opend_tiles[j][i]==1:
-                    count_furo_list[i]+=1
+                    count_furo_list[i] += 1
                     if i in doras:
                         dora_total_num += 1
         if opend_tiles[4][0]==1:
@@ -385,6 +413,90 @@ class MyAgent(CustomAgentBase):
             for i in yakuhai:
                 if count_furo_list[i]>=3:
                     self.action_mode = ActionModeType.FURO_YAKUHAI # 既に役がある鳴き
+        count_furo_simotya = 0
+        count_dora_simotya = 0
+        is_yakuhai_furo_simotya = False
+        count_furo_list_simotya = [0 for _ in range(34)]
+        for i in range(34):
+            for j in range(7,11):
+                if opend_tiles[j][i]==1:
+                    count_furo_list_simotya[i] += 1
+                    if i in doras:
+                        count_dora_simotya += 1
+        if opend_tiles[11][0]==1:
+            count_dora_simotya += 1
+        if opend_tiles[12][0]==1:
+            count_dora_simotya += 1
+        if opend_tiles[13][0]==1:
+            count_dora_simotya += 1
+        for i in count_furo_list_simotya:
+            if i==4:
+                count_furo_simotya += 3
+            else:
+                count_furo_simotya += i
+        for i in yakuhai_simotya:
+            if count_furo_list_simotya[i]>=3:
+                is_yakuhai_furo_simotya = True
+        # 2鳴き以上, 役牌鳴き, ドラ3見え以上ならリーチ判定
+        if is_yakuhai_furo_simotya and count_dora_simotya>=3 and count_furo_simotya>=6:
+            riichi[1][0] = 1
+        
+        count_furo_toimen = 0
+        count_dora_toimen = 0
+        is_yakuhai_furo_toimen = False
+        count_furo_list_toimen = [0 for _ in range(34)]
+        for i in range(34):
+            for j in range(14,18):
+                if opend_tiles[j][i]==1:
+                    count_furo_list_toimen[i] += 1
+                    if i in doras:
+                        count_dora_toimen += 1
+        if opend_tiles[18][0]==1:
+            count_dora_toimen += 1
+        if opend_tiles[19][0]==1:
+            count_dora_toimen += 1
+        if opend_tiles[20][0]==1:
+            count_dora_toimen += 1
+        for i in count_furo_list_toimen:
+            if i==4:
+                count_furo_toimen += 3
+            else:
+                count_furo_toimen += i
+        for i in yakuhai_toimen:
+            if count_furo_list_toimen[i]>=3:
+                is_yakuhai_furo_toimen = True
+        # 2鳴き以上, 役牌鳴き, ドラ3見え以上ならリーチ判定
+        if is_yakuhai_furo_toimen and count_dora_toimen>=3 and count_furo_toimen>=6:
+            riichi[2][0] = 1
+        
+        count_furo_kamitya = 0
+        count_dora_kamitya = 0
+        is_yakuhai_furo_kamitya = False
+        count_furo_list_kamitya = [0 for _ in range(34)]
+        for i in range(34):
+            for j in range(21,25):
+                if opend_tiles[j][i]==1:
+                    count_furo_list_kamitya[i] += 1
+                    if i in doras:
+                        count_dora_kamitya += 1
+        if opend_tiles[25][0]==1:
+            count_dora_kamitya += 1
+        if opend_tiles[26][0]==1:
+            count_dora_kamitya += 1
+        if opend_tiles[27][0]==1:
+            count_dora_kamitya += 1
+        for i in count_furo_list_kamitya:
+            if i==4:
+                count_furo_kamitya += 3
+            else:
+                count_furo_kamitya += i
+        for i in yakuhai_kamitya:
+            if count_furo_list_kamitya[i]>=3:
+                is_yakuhai_furo_kamitya = True
+        # 2鳴き以上, 役牌鳴き, ドラ3見え以上ならリーチ判定
+        if is_yakuhai_furo_kamitya and count_dora_kamitya>=3 and count_furo_kamitya>=6:
+            riichi[3][0] = 1
+        
 
         # 役牌暗刻持ち、かつドラを2枚以上持っていれば鳴きを視野に入れる
         for i in yakuhai:
@@ -751,6 +863,7 @@ class MyAgent(CustomAgentBase):
             or ((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[3+adjust_by_dora][0]==1 and dealer_num==0)
             or (((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)) and shanten[1+adjust_by_dora][0]==1)
             or ((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[1+adjust_by_dora][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>=18000))
+            or (round[5][0]==1 and (riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[0][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>18000))
             or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(8000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1)
             or ((my_rank==1 and round[6][0]==1 and dealer_num==0) and ((riichi[1][0]==1 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
             or ((my_rank==1 and round[6][0]==1 and dealer_num!=0) and ((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)) and shanten[0][0]==1)
