@@ -59,8 +59,10 @@ def discard_effective(hand_discards,discarded_tiles,doras,remaining_tiles):
                             effective_list[i] *= 0.4*bonus
                         elif (i in [27,28,29,30,31,32,33]):
                             effective_list[i] *= 0
+                        elif i==j:
+                            effective_list[i] *= 0.6
                         else:
-                            effective_list[i] *= 0.8*bonus
+                            effective_list[i] *= 0.7*bonus
             
             # 最も効果的でない（最も不必要な）牌を選択
             effective_min = 100000
@@ -93,7 +95,7 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
 
             if who[1][0]==1: # 下家リーチ
                 danger_list_1[34] = 100
-                if when_riichi[0] > 45:
+                if when_riichi[0] > 37:
                     for i in range(27,34):
                         danger_list_1[i] *= 3
             else:
@@ -194,7 +196,7 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
 
             if who[2][0]==1: # 対面リーチ
                 danger_list_2[34] = 100
-                if when_riichi[1] > 45:
+                if when_riichi[1] > 37:
                     for i in range(27,34):
                         danger_list_2[i] *= 3
             else:
@@ -295,7 +297,7 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
 
             if who[3][0]==1: # 上家リーチ
                 danger_list_3[34] = 100
-                if when_riichi[2] > 45:
+                if when_riichi[2] > 37:
                     for i in range(27,34):
                         danger_list_3[i] *= 3
             else:
@@ -426,10 +428,10 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
             danger_min = 1000000000
             danger_min_action = hand_discards[0]
             for a in hand_discards:
-                print(str(a.tile().type())+": "+str(danger_point[a.tile().type()]))
+                # print(str(a.tile().type())+": "+str(danger_point[a.tile().type()]))
                 if danger_point[a.tile().type()]<danger_min:
                     danger_min = danger_point[a.tile().type()]
                     danger_min_action = a
-            print("selected: "+str(danger_min_action.tile().type()))
+            # print("selected: "+str(danger_min_action.tile().type()))
             
             return danger_min_action

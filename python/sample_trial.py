@@ -42,6 +42,8 @@ class MyAgent(CustomAgentBase):
         self.when_riichi = [-1,-1,-1]
         self.before_riichi_discards_list = [[0 for _ in range(34)] for _ in range(3)]
         self.my_player_id = -1
+        self.ankan_num = 0
+        self.ankan_types = []
     
     
     def act(self, obs: mjx.Observation) -> mjx.Action:                    
@@ -67,6 +69,8 @@ class MyAgent(CustomAgentBase):
         kamitya_rank = 1
         kyotaku_num = 0
         honba_num = 0
+        is_discarded = False
+        is_reset = False
 
         manzu = [0,1,2,3,4,5,6,7,8]
         pinzu = [9,10,11,12,13,14,15,16,17]
@@ -157,9 +161,6 @@ class MyAgent(CustomAgentBase):
             if dora_in_hand[i][0]==1:
                 dora_num_in_hand += 1
         dora_total_num += dora_num_in_hand
-        is_last_round_last_rank = False
-        if (round[6][0]==1 and ranking[2][0]==1) or (round[4][0]==1 and tens[self.my_player_id]<=(3000+honba_num*100)) or (tens[self.my_player_id]<=(2000+honba_num*100)):
-            is_last_round_last_rank = True
         
         for i in range(3):
             if ranking[i][0]==1:
@@ -203,10 +204,20 @@ class MyAgent(CustomAgentBase):
         for i in range(4):
             self.remaining_tiles = [[x-y for (x,y) in zip(self.remaining_tiles[0],hand[i])],self.remaining_tiles[1]]
 
-        self.remaining_tiles_num = 70
+        self.remaining_tiles_num = 69
         ignored_discards = [0 for _ in range(34)]
 
         for e in obs.events():
+            if e.type() in [EventType.ABORTIVE_DRAW_NORMAL, EventType.ABORTIVE_DRAW_NAGASHI_MANGAN, 
+                            EventType.ABORTIVE_DRAW_FOUR_WINDS, EventType.ABORTIVE_DRAW_FOUR_KANS,
+                            EventType.ABORTIVE_DRAW_THREE_RONS, EventType.ABORTIVE_DRAW_FOUR_RIICHIS,
+                            EventType.RON, EventType.TSUMO]:
+                self.when_riichi = [-1,-1,-1]
+                self.before_riichi_discards_list = [[0 for _ in range(34)] for _ in range(3)]
+                self.ankan_num = 0
+                self.ankan_types = []
+                is_reset = True
+
             if e.type() == EventType.RIICHI:
                 if self.my_player_id==0:
                     if e.who()==1:
@@ -285,27 +296,28 @@ class MyAgent(CustomAgentBase):
                     self.remaining_tiles[1][1]=0
                 elif t.is_red() and t.type() == 22:
                     self.remaining_tiles[1][2]=0
-
-        if self.remaining_tiles_num>=60:
-            self.when_riichi = [-1,-1,-1]
-            self.before_riichi_discards_list = [[0 for _ in range(34)] for _ in range(3)]
         
+        is_last_round_last_rank = False
+        if (round[6][0]==1 and ranking[2][0]==1) or (round[4][0]==1 and tens[self.my_player_id]<=(3000+honba_num*100)) or (tens[self.my_player_id]<=(2000+honba_num*100)) or (my_rank==3 and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and round[6][0]==1 and ((-diff_ten(tens,3,4))<3900+kyotaku_num*1000+honba_num*300)):
+            is_last_round_last_rank = True
+
         after_riichi_discards_list = [[0 for _ in range(34)] for _ in range(3)]
         # リーチをした順目を記憶
-        if riichi[1][0]==1 and self.when_riichi[0]==-1:
-            self.when_riichi[0] = self.remaining_tiles_num
-            self.before_riichi_discards_list[0] = copy.deepcopy(ignored_discards)
-        elif riichi[2][0]==1 and self.when_riichi[1]==-1:
-            self.when_riichi[1] = self.remaining_tiles_num
-            self.before_riichi_discards_list[1] = copy.deepcopy(ignored_discards)
-        elif riichi[3][0]==1 and self.when_riichi[2]==-1:
-            self.when_riichi[2] = self.remaining_tiles_num
-            self.before_riichi_discards_list[2] = copy.deepcopy(ignored_discards)
+        if not is_reset:
+            if riichi[1][0]==1 and self.when_riichi[0]==-1:
+                self.when_riichi[0] = self.remaining_tiles_num
+                self.before_riichi_discards_list[0] = copy.deepcopy(ignored_discards)
+            elif riichi[2][0]==1 and self.when_riichi[1]==-1:
+                self.when_riichi[1] = self.remaining_tiles_num
+                self.before_riichi_discards_list[1] = copy.deepcopy(ignored_discards)
+            elif riichi[3][0]==1 and self.when_riichi[2]==-1:
+                self.when_riichi[2] = self.remaining_tiles_num
+                self.before_riichi_discards_list[2] = copy.deepcopy(ignored_discards)
 
-        for i in range(3):
-            for j in range(34):
-                if riichi[i+1][0]==1:
-                    after_riichi_discards_list[i][j] = ignored_discards[j]-self.before_riichi_discards_list[i][j]
+            for i in range(3):
+                for j in range(34):
+                    if riichi[i+1][0]==1:
+                        after_riichi_discards_list[i][j] = ignored_discards[j]-self.before_riichi_discards_list[i][j]
 
         # 行動選択処理
         self.action_mode = ActionModeType.MENZEN
@@ -333,6 +345,32 @@ class MyAgent(CustomAgentBase):
                 else:
                     return kyusyu_actions[0]
         
+        # 四暗刻を狙えるかどうかの判定
+        is_possible_to_aim_suanko = False
+        is_possible_to_aim_suanko_tanki = False
+        toitsu_count = 0
+        toitsu_types = []
+        anko_count = 0
+        anko_types = []
+        for i in range(34):
+            if hand[1][i]==1 and hand[2][i]==0:
+                toitsu_count += 1
+                toitsu_types.append(i)
+            if hand[2][i]==1:
+                anko_count += 1
+                anko_types.append(i)
+        if self.ankan_num > 0:
+            anko_count += self.ankan_num
+            for i in self.ankan_types:
+                anko_types.append(i)
+        if anko_count==3 and toitsu_count==2:
+            for i in toitsu_types:
+                if self.remaining_tiles[0][i]>=1:
+                    is_possible_to_aim_suanko = True
+        elif anko_count==4:
+            is_possible_to_aim_suanko = True
+            is_possible_to_aim_suanko_tanki = True
+        
         # アガれるときはアガる
         win_actions = [a for a in legal_actions if a.type() in [ActionType.TSUMO, ActionType.RON]]
         if len(win_actions) >= 1:
@@ -344,6 +382,8 @@ class MyAgent(CustomAgentBase):
             or ((my_rank==1 and round[6][0]==1 and dealer_num==0) and ((riichi[1][0]==1 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))))
             or ((my_rank==1 and round[6][0]==1 and dealer_num!=0) and ((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)))
             ):
+            pass
+        elif is_possible_to_aim_suanko_tanki:
             pass
         else:
             if len(riichi_actions) >= 1:
@@ -360,8 +400,10 @@ class MyAgent(CustomAgentBase):
                             shanpon_count += 1
                     if shanpon_count >=2:
                         change_wait_discard = [a for a in legal_discards if a.tile().type() in effective_draw_types]
+                        is_discarded = True
                         return discard(riichi,discarded_tiles,change_wait_discard,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
                     if len(effective_discards)>0:
+                        is_discarded = True
                         return discard(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
                     else:
                         change_wait_discard_types = []
@@ -371,8 +413,10 @@ class MyAgent(CustomAgentBase):
                                     change_wait_discard_types.append(e)
                         change_wait_discards = [a for a in legal_discards if a.tile().type() in change_wait_discard_types]
                         if len(change_wait_discards)>0 and riichi[1][0]==0 and riichi[2][0]==0 and riichi[3][0]==0:
+                            is_discarded = True
                             return discard(riichi,discarded_tiles,change_wait_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
                         else:
+                            is_discarded = True
                             return discard(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
                 else:
                     is_furiten = False
@@ -416,6 +460,10 @@ class MyAgent(CustomAgentBase):
             dora_total_num += 1
         for i in count_furo_list:
             count_furo += i
+        if self.ankan_num > 0:
+            count_furo -= self.ankan_num*4
+            for i in self.ankan_types:
+                count_furo_list[i] = 0
         if count_furo>0:
             self.action_mode = ActionModeType.FURO # 鳴いている
             for i in yakuhai:
@@ -592,6 +640,7 @@ class MyAgent(CustomAgentBase):
                 tyutyan_discards = tyutyan_dora_discards
 
             if len(tyutyan_discards)>0:
+                is_discarded = True
                 return discard(riichi,discarded_tiles,tyutyan_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
             else:
                 toitsu_or_anko_yaotyu_list = []
@@ -600,6 +649,7 @@ class MyAgent(CustomAgentBase):
                         toitsu_or_anko_yaotyu_list.append(i)
                 if len(toitsu_or_anko_yaotyu_list)>=2:
                     yaotyu_discards = [a for a in legal_discards if a.tile().type() in toitsu_or_anko_yaotyu_list]
+                    is_discarded = True
                     return discard(riichi,discarded_tiles,yaotyu_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
                 effective_discard_types = obs.curr_hand().effective_discard_types()
                 effective_discards = [a for a in legal_discards if a.tile().type() in effective_discard_types]
@@ -611,10 +661,12 @@ class MyAgent(CustomAgentBase):
                                 removed_list.append(a)
                         if len(removed_list)<=0:
                             removed_list = effective_discards
+                        is_discarded = True
                         return discard(riichi,discarded_tiles,removed_list,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
                     else:
+                        is_discarded = True
                         return effective_discards[0]
-
+                is_discarded = True
                 return discard(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
 
         # ポンの処理
@@ -772,6 +824,8 @@ class MyAgent(CustomAgentBase):
         closed_kan_actions = [a for a in legal_actions if a.type() == ActionType.CLOSED_KAN]
         if len(closed_kan_actions) >= 1:
             if riichi[0][0]==1:
+                self.ankan_num += 1
+                self.ankan_types.append(closed_kan_actions[0].open().tiles_from_hand()[0].type())
                 return closed_kan_actions[0]
             tile_type_of_closed_kan = closed_kan_actions[0].open().tiles_from_hand()[0].type()
             effective_discard_types = obs.curr_hand().effective_discard_types()
@@ -779,6 +833,8 @@ class MyAgent(CustomAgentBase):
                 if riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1:
                     pass
                 else:
+                    self.ankan_num += 1
+                    self.ankan_types.append(closed_kan_actions[0].open().tiles_from_hand()[0].type())
                     return closed_kan_actions[0]
             # 順子の一部になっているときにはカンしない
             elif is_piece_of_syuntsu(hand,tile_type_of_closed_kan):
@@ -787,219 +843,234 @@ class MyAgent(CustomAgentBase):
                 if (riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[2][0]==1:
                     pass
                 else:
+                    self.ankan_num += 1
+                    self.ankan_types.append(closed_kan_actions[0].open().tiles_from_hand()[0].type())
                     return closed_kan_actions[0]
             else:
                 if (riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[2][0]==1:
                     pass
                 else:
+                    self.ankan_num += 1
+                    self.ankan_types.append(closed_kan_actions[0].open().tiles_from_hand()[0].type())
                     return closed_kan_actions[0]
 
         # 打牌の処理
-        adjust_by_dora = 0
-        if dora_total_num>=4:
-            adjust_by_dora = 1
-        legal_discards = [a for a in legal_actions if a.type() in [ActionType.DISCARD, ActionType.TSUMOGIRI]]
-        effective_discard_types = obs.curr_hand().effective_discard_types()
-        effective_discards = [a for a in legal_discards if a.tile().type() in effective_discard_types]
-        is_having_anpai_for_simotya = False
-        anpai_types_for_simotya = []
-        if riichi[1][0]==1:
-            for i in range(3,6):
-                for j in range(34):
-                    if discarded_tiles[i][j]==1:
-                        if j in effective_discard_types:
+        if not is_discarded:
+            adjust_by_dora = 0
+            if dora_total_num>=4:
+                adjust_by_dora = 1
+            legal_discards = [a for a in legal_actions if a.type() in [ActionType.DISCARD, ActionType.TSUMOGIRI]]
+            effective_discard_types = obs.curr_hand().effective_discard_types()
+            effective_discards = [a for a in legal_discards if a.tile().type() in effective_discard_types]
+            is_having_anpai_for_simotya = False
+            anpai_types_for_simotya = []
+            if riichi[1][0]==1:
+                for i in range(3,6):
+                    for j in range(34):
+                        if discarded_tiles[i][j]==1:
+                            if j in effective_discard_types:
+                                is_having_anpai_for_simotya = True
+                                if not j in anpai_types_for_simotya:
+                                    anpai_types_for_simotya.append(j)
+                for i in range(34):
+                    if after_riichi_discards_list[0][i]>0:
+                        if i in effective_discard_types:
                             is_having_anpai_for_simotya = True
-                            if not j in anpai_types_for_simotya:
-                                anpai_types_for_simotya.append(j)
-            for i in range(34):
-                if after_riichi_discards_list[0][i]>0:
-                    if i in effective_discard_types:
-                        is_having_anpai_for_simotya = True
-                        if not i in anpai_types_for_simotya:
-                            anpai_types_for_simotya.append(i)
-        is_having_anpai_for_toimen = False
-        anpai_types_for_toimen = []
-        if riichi[2][0]==1:
-            for i in range(6,9):
-                for j in range(34):
-                    if discarded_tiles[i][j]==1:
-                        if j in effective_discard_types:
+                            if not i in anpai_types_for_simotya:
+                                anpai_types_for_simotya.append(i)
+            is_having_anpai_for_toimen = False
+            anpai_types_for_toimen = []
+            if riichi[2][0]==1:
+                for i in range(6,9):
+                    for j in range(34):
+                        if discarded_tiles[i][j]==1:
+                            if j in effective_discard_types:
+                                is_having_anpai_for_toimen = True
+                                if not j in anpai_types_for_toimen:
+                                    anpai_types_for_toimen.append(j)
+                for i in range(34):
+                    if after_riichi_discards_list[1][i]>0:
+                        if i in effective_discard_types:
                             is_having_anpai_for_toimen = True
-                            if not j in anpai_types_for_toimen:
-                                anpai_types_for_toimen.append(j)
-            for i in range(34):
-                if after_riichi_discards_list[1][i]>0:
-                    if i in effective_discard_types:
-                        is_having_anpai_for_toimen = True
-                        if not i in anpai_types_for_toimen:
-                            anpai_types_for_toimen.append(i)
-        is_having_anpai_for_kamitya = False
-        anpai_types_for_kamitya = []
-        if riichi[3][0]==1:
-            for i in range(9,12):
-                for j in range(34):
-                    if discarded_tiles[i][j]==1:
-                        if j in effective_discard_types:
+                            if not i in anpai_types_for_toimen:
+                                anpai_types_for_toimen.append(i)
+            is_having_anpai_for_kamitya = False
+            anpai_types_for_kamitya = []
+            if riichi[3][0]==1:
+                for i in range(9,12):
+                    for j in range(34):
+                        if discarded_tiles[i][j]==1:
+                            if j in effective_discard_types:
+                                is_having_anpai_for_kamitya = True
+                                if not j in anpai_types_for_kamitya:
+                                    anpai_types_for_kamitya.append(j)
+                for i in range(34):
+                    if after_riichi_discards_list[2][i]>0:
+                        if i in effective_discard_types:
                             is_having_anpai_for_kamitya = True
-                            if not j in anpai_types_for_kamitya:
-                                anpai_types_for_kamitya.append(j)
-            for i in range(34):
-                if after_riichi_discards_list[2][i]>0:
-                    if i in effective_discard_types:
-                        is_having_anpai_for_kamitya = True
-                        if not i in anpai_types_for_kamitya:
-                            anpai_types_for_kamitya.append(i)
-        is_having_anpai_for_simotya_and_toimen = False
-        is_having_anpai_for_simotya_and_kamitya = False
-        is_having_anpai_for_toimen_and_kamitya = False
-        is_having_anpai_for_all = False
-        if riichi[1][0]==1 and riichi[2][0]==1:
-            for s in anpai_types_for_simotya:
-                for t in anpai_types_for_toimen:
-                    if s==t:
-                        is_having_anpai_for_simotya_and_toimen = True
-        if riichi[1][0]==1 and riichi[3][0]==1:
-            for s in anpai_types_for_simotya:
-                for k in anpai_types_for_kamitya:
-                    if s==k:
-                        is_having_anpai_for_simotya_and_kamitya = True
-        if riichi[2][0]==1 and riichi[3][0]==1:
-            for t in anpai_types_for_toimen:
-                for k in anpai_types_for_kamitya:
-                    if t==k:
-                        is_having_anpai_for_toimen_and_kamitya = True
-        if riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1:
-            for s in anpai_types_for_simotya:
+                            if not i in anpai_types_for_kamitya:
+                                anpai_types_for_kamitya.append(i)
+            is_having_anpai_for_simotya_and_toimen = False
+            is_having_anpai_for_simotya_and_kamitya = False
+            is_having_anpai_for_toimen_and_kamitya = False
+            is_having_anpai_for_all = False
+            if riichi[1][0]==1 and riichi[2][0]==1:
+                for s in anpai_types_for_simotya:
+                    for t in anpai_types_for_toimen:
+                        if s==t:
+                            is_having_anpai_for_simotya_and_toimen = True
+            if riichi[1][0]==1 and riichi[3][0]==1:
+                for s in anpai_types_for_simotya:
+                    for k in anpai_types_for_kamitya:
+                        if s==k:
+                            is_having_anpai_for_simotya_and_kamitya = True
+            if riichi[2][0]==1 and riichi[3][0]==1:
                 for t in anpai_types_for_toimen:
                     for k in anpai_types_for_kamitya:
-                        if s==t and t==k:
-                            is_having_anpai_for_all = True
+                        if t==k:
+                            is_having_anpai_for_toimen_and_kamitya = True
+            if riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1:
+                for s in anpai_types_for_simotya:
+                    for t in anpai_types_for_toimen:
+                        for k in anpai_types_for_kamitya:
+                            if s==t and t==k:
+                                is_having_anpai_for_all = True
 
-        # ベタ降り
-        if (not is_last_round_last_rank) and (((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[2+adjust_by_dora][0]==1 and dealer_num!=0)
-            or ((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[3+adjust_by_dora][0]==1 and dealer_num==0)
-            or (((riichi[1][0]==1 and riichi[2][0]==1) or (riichi[1][0]==1 and riichi[3][0]==1) or (riichi[2][0]==1 and riichi[3][0]==1)) and shanten[1+adjust_by_dora][0]==1)
-            or ((riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1) and shanten[0][0]==1)
-            or (((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)) and shanten[1+adjust_by_dora][0]==1)
-            or (round[5][0]==1 and (riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[0][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>18000))
-            or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1 and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
-            or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3) or (riichi[2][0]==1 and toimen_rank==3) or (riichi[3][0]==1 and kamitya_rank==3)) and (-diff_ten(tens,my_rank,3))>(12000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1 and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
-            or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==2 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==2 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==2 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
-            or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1 and (-diff_ten(tens,my_rank,3))<(8000+kyotaku_num*1000+honba_num*300))
-            or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==3 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==3 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
-            ):
-            if len(effective_discards)>0:
-                if riichi[1][0]==1 and is_having_anpai_for_simotya and riichi[2][0]==0 and riichi[3][0]==0:
-                    discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
-                elif riichi[2][0]==1 and is_having_anpai_for_toimen and riichi[1][0]==0 and riichi[3][0]==0:
-                    discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
-                elif riichi[3][0]==1 and is_having_anpai_for_kamitya and riichi[1][0]==0 and riichi[2][0]==0:
-                    discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
-                elif riichi[1][0]==1 and riichi[2][0]==1 and is_having_anpai_for_simotya_and_toimen and riichi[3][0]==0:
-                    discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
-                elif riichi[1][0]==1 and riichi[3][0]==1 and is_having_anpai_for_simotya_and_kamitya and riichi[2][0]==0:
-                    discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
-                elif riichi[2][0]==1 and riichi[3][0]==1 and is_having_anpai_for_toimen_and_kamitya and riichi[1][0]==0:
-                    discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
-                elif riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1 and is_having_anpai_for_all:
-                    discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
-            return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
-        for i in yakuhai: # 既に鳴いているときは対子役牌を捨てない
-            for a in effective_discards:
-                if a.tile().type()==i:
-                    if hand[1][i]==1 and hand[2][i]==0 and self.action_mode==ActionModeType.FURO and (not self.target_yaku in [TargetYakuType.CHINITSU_MANZU,TargetYakuType.CHINITSU_PINZU,TargetYakuType.CHINITSU_SOZU]):
-                        effective_discards.remove(a)
-        for i in zihai: # 対子で持っているが売り切れている字牌は捨てる
-            if (effective_draw[i]==1 or hand[2][i]==0) and self.remaining_tiles[0][i]==0:
-                effective_zihai_discards = [a for a in legal_discards if a.tile().type() == i]
-                for a in effective_zihai_discards:
-                    effective_discards.append(a)
-        if self.target_yaku==TargetYakuType.CHINITSU_MANZU:
-            tinitsu_discards = [a for a in legal_discards if (a.tile().type() in pinzu) or (a.tile().type() in sozu) or (a.tile().type() in zihai)]
-            if len(tinitsu_discards)>0:
-                effective_discards = tinitsu_discards
-        elif self.target_yaku==TargetYakuType.CHINITSU_PINZU:
-            tinitsu_discards = [a for a in legal_discards if (a.tile().type() in manzu) or (a.tile().type() in sozu) or (a.tile().type() in zihai)]
-            if len(tinitsu_discards)>0:
-                effective_discards = tinitsu_discards
-        elif self.target_yaku==TargetYakuType.CHINITSU_SOZU:
-            tinitsu_discards = [a for a in legal_discards if (a.tile().type() in manzu) or (a.tile().type() in pinzu) or (a.tile().type() in zihai)]
-            if len(tinitsu_discards)>0:
-                effective_discards = tinitsu_discards
-        elif self.target_yaku==TargetYakuType.HONITSU_MANZU:
-            honitsu_discards = [a for a in legal_discards if (a.tile().type() in pinzu) or (a.tile().type() in sozu)]
-            if len(honitsu_discards)>0:
-                effective_discards = honitsu_discards
-        elif self.target_yaku==TargetYakuType.HONITSU_PINZU:
-            honitsu_discards = [a for a in legal_discards if (a.tile().type() in manzu) or (a.tile().type() in sozu)]
-            if len(honitsu_discards)>0:
-                effective_discards = honitsu_discards
-        elif self.target_yaku==TargetYakuType.HONITSU_SOZU:
-            honitsu_discards = [a for a in legal_discards if (a.tile().type() in manzu) or (a.tile().type() in pinzu)]
-            if len(honitsu_discards)>0:
-                effective_discards = honitsu_discards
-        
-        if len(effective_discards) > 0:
-            if len(effective_discards) > 1:
-                if len(effective_discards)==2 and shanten[1][0]==0:
-                    toitsu_count = 0
-                    for i in range(34):
-                        if hand[1][i]==1 and hand[2][i]==0:
-                            toitsu_count += 1
-                    if toitsu_count>=6: # 七対子のリーチ
-                        a = effective_discards[0]
-                        b = effective_discards[1]
-                        count_a_suzi_in_my_discarded_tiles = 0
-                        count_b_suzi_in_my_discarded_tiles = 0
-                        for x in check_suzi(a.tile().type()):
-                            if x in my_discarded_tiles_types:
-                                count_a_suzi_in_my_discarded_tiles += 1
-                        for y in check_suzi(b.tile().type()):
-                            if y in my_discarded_tiles_types:
-                                count_b_suzi_in_my_discarded_tiles += 1
-                        if (a.tile().type() in doras or a.tile().is_red()) and self.remaining_tiles[0][a.tile().type()]!=0 and ((not (b.tile().type() in doras)) and (not b.tile().is_red())):
-                            return b
-                        elif (b.tile().type() in doras or b.tile().is_red()) and self.remaining_tiles[0][b.tile().type()]!=0 and ((not (a.tile().type() in doras)) and (not a.tile().is_red())):
-                            return a
-                        elif (a.tile().type() in doras or a.tile().is_red()) and (b.tile().type() in doras or b.tile().is_red()):
-                            if (a.tile().type() in doras and a.tile().is_red()) and self.remaining_tiles[0][a.tile().type()]!=0 and (((b.tile().type() in doras) and (not b.tile().is_red())) or (b.tile().is_red() and (not (b.tile().type() in doras)))):
-                                return b
-                            elif (b.tile().type() in doras and b.tile().is_red()) and self.remaining_tiles[0][b.tile().type()]!=0 and (((a.tile().type() in doras) and (not a.tile().is_red())) or (a.tile().is_red() and (not (a.tile().type() in doras)))):
-                                return a
-                            else:
-                                if a.tile().type() in doras and self.remaining_tiles[0][b.tile().type()]!=0 and b.tile().is_red():
-                                    return a
-                                elif b.tile().type() in doras and self.remaining_tiles[0][a.tile().type()]!=0 and a.tile().is_red():
-                                    return b
-                                elif self.remaining_tiles[0][a.tile().type()]>self.remaining_tiles[0][b.tile().type()]:
-                                    return b
-                                elif self.remaining_tiles[0][a.tile().type()]<=self.remaining_tiles[0][b.tile().type()]:
-                                    return a
-                        elif self.remaining_tiles[0][a.tile().type()]>=1 and (not (a.tile().type() in my_discarded_tiles_types)) and (count_a_suzi_in_my_discarded_tiles>=count_b_suzi_in_my_discarded_tiles):
-                            return b
-                        elif self.remaining_tiles[0][b.tile().type()]>=1 and (not (b.tile().type() in my_discarded_tiles_types)) and (count_a_suzi_in_my_discarded_tiles<count_b_suzi_in_my_discarded_tiles):
-                            return a
-                        elif self.remaining_tiles[0][a.tile().type()]>self.remaining_tiles[0][b.tile().type()]:
-                            return b
-                        elif self.remaining_tiles[0][a.tile().type()]<=self.remaining_tiles[0][a.tile().type()]:
-                            return a
-                effective_discards_removed_doras = [a for a in legal_discards if a.tile().type() in effective_discard_types]
-                for a in effective_discards_removed_doras:
-                    if a.tile().type() in doras or a.tile().is_red(): # ドラは捨てない（他の選択肢がある場合）
-                        if (a.tile().type() in zihai) and ((hand[0][a.tile().type()]==1 and hand[1][a.tile().type()]==0 and self.remaining_tiles[0][a.tile().type()]>=2) or (hand[1][a.tile().type()]==1 and hand[2][a.tile().type()]==0 and self.remaining_tiles[0][a.tile().type()]>=1)):
-                            effective_discards_removed_doras.remove(a)
-                        elif a.tile().type() in zihai:
-                            pass
-                        else:
-                            effective_discards_removed_doras.remove(a)
-                if len(effective_discards_removed_doras)<=0:
-                    return discard(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
+            # ベタ降り
+            if (not is_last_round_last_rank) and (((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[2+adjust_by_dora][0]==1 and dealer_num!=0)
+                or ((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[3+adjust_by_dora][0]==1 and dealer_num==0)
+                or (((riichi[1][0]==1 and riichi[2][0]==1) or (riichi[1][0]==1 and riichi[3][0]==1) or (riichi[2][0]==1 and riichi[3][0]==1)) and shanten[1+adjust_by_dora][0]==1)
+                or ((riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1) and shanten[0][0]==1)
+                or (((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)) and shanten[1+adjust_by_dora][0]==1)
+                or (round[5][0]==1 and (riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[0][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>18000))
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1 and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3) or (riichi[2][0]==1 and toimen_rank==3) or (riichi[3][0]==1 and kamitya_rank==3)) and (-diff_ten(tens,my_rank,3))>(12000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1 and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==2 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==2 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==2 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1 and (-diff_ten(tens,my_rank,3))<(8000+kyotaku_num*1000+honba_num*300))
+                or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==3 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==3 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                ):
+                is_discarded = True
+                if len(effective_discards)>0:
+                    if riichi[1][0]==1 and is_having_anpai_for_simotya and riichi[2][0]==0 and riichi[3][0]==0:
+                        return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
+                    elif riichi[2][0]==1 and is_having_anpai_for_toimen and riichi[1][0]==0 and riichi[3][0]==0:
+                        return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
+                    elif riichi[3][0]==1 and is_having_anpai_for_kamitya and riichi[1][0]==0 and riichi[2][0]==0:
+                        return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
+                    elif riichi[1][0]==1 and riichi[2][0]==1 and is_having_anpai_for_simotya_and_toimen and riichi[3][0]==0:
+                        return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
+                    elif riichi[1][0]==1 and riichi[3][0]==1 and is_having_anpai_for_simotya_and_kamitya and riichi[2][0]==0:
+                        return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
+                    elif riichi[2][0]==1 and riichi[3][0]==1 and is_having_anpai_for_toimen_and_kamitya and riichi[1][0]==0:
+                        return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
+                    elif riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1 and is_having_anpai_for_all:
+                        return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
                 else:
-                    return discard(riichi,discarded_tiles,effective_discards_removed_doras,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
-            return discard(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
-        # 効果的な打牌がない
-        return discard(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
-    
+                    return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
+            for i in yakuhai: # 既に鳴いているときは対子役牌を捨てない
+                for a in effective_discards:
+                    if a.tile().type()==i:
+                        if hand[1][i]==1 and hand[2][i]==0 and self.action_mode==ActionModeType.FURO and (not self.target_yaku in [TargetYakuType.CHINITSU_MANZU,TargetYakuType.CHINITSU_PINZU,TargetYakuType.CHINITSU_SOZU]):
+                            effective_discards.remove(a)
+            for i in zihai: # 対子で持っているが売り切れている字牌は捨てる
+                if (effective_draw[i]==1 or hand[2][i]==0) and self.remaining_tiles[0][i]==0:
+                    effective_zihai_discards = [a for a in legal_discards if a.tile().type() == i]
+                    for a in effective_zihai_discards:
+                        effective_discards.append(a)
+            if self.target_yaku==TargetYakuType.CHINITSU_MANZU:
+                tinitsu_discards = [a for a in legal_discards if (a.tile().type() in pinzu) or (a.tile().type() in sozu) or (a.tile().type() in zihai)]
+                if len(tinitsu_discards)>0:
+                    effective_discards = tinitsu_discards
+            elif self.target_yaku==TargetYakuType.CHINITSU_PINZU:
+                tinitsu_discards = [a for a in legal_discards if (a.tile().type() in manzu) or (a.tile().type() in sozu) or (a.tile().type() in zihai)]
+                if len(tinitsu_discards)>0:
+                    effective_discards = tinitsu_discards
+            elif self.target_yaku==TargetYakuType.CHINITSU_SOZU:
+                tinitsu_discards = [a for a in legal_discards if (a.tile().type() in manzu) or (a.tile().type() in pinzu) or (a.tile().type() in zihai)]
+                if len(tinitsu_discards)>0:
+                    effective_discards = tinitsu_discards
+            elif self.target_yaku==TargetYakuType.HONITSU_MANZU:
+                honitsu_discards = [a for a in legal_discards if (a.tile().type() in pinzu) or (a.tile().type() in sozu)]
+                if len(honitsu_discards)>0:
+                    effective_discards = honitsu_discards
+            elif self.target_yaku==TargetYakuType.HONITSU_PINZU:
+                honitsu_discards = [a for a in legal_discards if (a.tile().type() in manzu) or (a.tile().type() in sozu)]
+                if len(honitsu_discards)>0:
+                    effective_discards = honitsu_discards
+            elif self.target_yaku==TargetYakuType.HONITSU_SOZU:
+                honitsu_discards = [a for a in legal_discards if (a.tile().type() in manzu) or (a.tile().type() in pinzu)]
+                if len(honitsu_discards)>0:
+                    effective_discards = honitsu_discards
+            
+            if len(effective_discards) > 0:
+                if len(effective_discards) > 1:
+                    if is_possible_to_aim_suanko:
+                        effective_discards_for_suanko = [a for a in legal_discards if a.tile().type() in effective_discard_types]
+                        if anko_count==3 and toitsu_count==2:
+                            for a in effective_discards_for_suanko:
+                                if (a.tile().type() in anko_types) or (a.tile().type() in toitsu_types):
+                                    effective_discards_for_suanko.remove(a)
+                        if anko_count==4:
+                            for a in effective_discards_for_suanko:
+                                if (a.tile().type() in anko_types):
+                                    effective_discards_for_suanko.remove(a)
+                        if len(effective_discards_for_suanko)>0:
+                            return discard(riichi,discarded_tiles,effective_discards_for_suanko,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
+                    elif len(effective_discards)==2 and shanten[1][0]==0:
+                        if toitsu_count>=6: # 七対子のリーチ
+                            a = effective_discards[0]
+                            b = effective_discards[1]
+                            count_a_suzi_in_my_discarded_tiles = 0
+                            count_b_suzi_in_my_discarded_tiles = 0
+                            for x in check_suzi(a.tile().type()):
+                                if x in my_discarded_tiles_types:
+                                    count_a_suzi_in_my_discarded_tiles += 1
+                            for y in check_suzi(b.tile().type()):
+                                if y in my_discarded_tiles_types:
+                                    count_b_suzi_in_my_discarded_tiles += 1
+                            if (a.tile().type() in doras or a.tile().is_red()) and self.remaining_tiles[0][a.tile().type()]!=0 and ((not (b.tile().type() in doras)) and (not b.tile().is_red())):
+                                return b
+                            elif (b.tile().type() in doras or b.tile().is_red()) and self.remaining_tiles[0][b.tile().type()]!=0 and ((not (a.tile().type() in doras)) and (not a.tile().is_red())):
+                                return a
+                            elif (a.tile().type() in doras or a.tile().is_red()) and (b.tile().type() in doras or b.tile().is_red()):
+                                if (a.tile().type() in doras and a.tile().is_red()) and self.remaining_tiles[0][a.tile().type()]!=0 and (((b.tile().type() in doras) and (not b.tile().is_red())) or (b.tile().is_red() and (not (b.tile().type() in doras)))):
+                                    return b
+                                elif (b.tile().type() in doras and b.tile().is_red()) and self.remaining_tiles[0][b.tile().type()]!=0 and (((a.tile().type() in doras) and (not a.tile().is_red())) or (a.tile().is_red() and (not (a.tile().type() in doras)))):
+                                    return a
+                                else:
+                                    if a.tile().type() in doras and self.remaining_tiles[0][b.tile().type()]!=0 and b.tile().is_red():
+                                        return a
+                                    elif b.tile().type() in doras and self.remaining_tiles[0][a.tile().type()]!=0 and a.tile().is_red():
+                                        return b
+                                    elif self.remaining_tiles[0][a.tile().type()]>self.remaining_tiles[0][b.tile().type()]:
+                                        return b
+                                    elif self.remaining_tiles[0][a.tile().type()]<=self.remaining_tiles[0][b.tile().type()]:
+                                        return a
+                            elif self.remaining_tiles[0][a.tile().type()]>=1 and (not (a.tile().type() in my_discarded_tiles_types)) and (count_a_suzi_in_my_discarded_tiles>=count_b_suzi_in_my_discarded_tiles):
+                                return b
+                            elif self.remaining_tiles[0][b.tile().type()]>=1 and (not (b.tile().type() in my_discarded_tiles_types)) and (count_a_suzi_in_my_discarded_tiles<count_b_suzi_in_my_discarded_tiles):
+                                return a
+                            elif self.remaining_tiles[0][a.tile().type()]>self.remaining_tiles[0][b.tile().type()]:
+                                return b
+                            elif self.remaining_tiles[0][a.tile().type()]<=self.remaining_tiles[0][a.tile().type()]:
+                                return a
+                    effective_discards_removed_doras = [a for a in legal_discards if a.tile().type() in effective_discard_types]
+                    for a in effective_discards_removed_doras:
+                        if a.tile().type() in doras or a.tile().is_red(): # ドラは捨てない（他の選択肢がある場合）
+                            if (a.tile().type() in zihai) and ((hand[0][a.tile().type()]==1 and hand[1][a.tile().type()]==0 and self.remaining_tiles[0][a.tile().type()]>=2) or (hand[1][a.tile().type()]==1 and hand[2][a.tile().type()]==0 and self.remaining_tiles[0][a.tile().type()]>=1)):
+                                effective_discards_removed_doras.remove(a)
+                            elif a.tile().type() in zihai:
+                                pass
+                            else:
+                                effective_discards_removed_doras.remove(a)
+                    if len(effective_discards_removed_doras)<=0:
+                        return discard(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
+                    else:
+                        return discard(riichi,discarded_tiles,effective_discards_removed_doras,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
+                return discard(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
+            # 効果的な打牌がない
+            return discard(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
+        
 class MenzenAgent(CustomAgentBase):
     def __init__(self) -> None:
         super().__init__()
