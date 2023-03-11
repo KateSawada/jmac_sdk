@@ -882,9 +882,11 @@ class MyAgent(CustomAgentBase):
             or ((riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1) and shanten[0][0]==1)
             or (((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)) and shanten[1+adjust_by_dora][0]==1)
             or (round[5][0]==1 and (riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[0][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>18000))
-            or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(8000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1)
-            or ((my_rank==1 and round[6][0]==1 and dealer_num==0) and ((riichi[1][0]==1 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
-            or ((my_rank==1 and round[6][0]==1 and dealer_num!=0) and ((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)) and shanten[0][0]==1)
+            or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1 and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
+            or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3) or (riichi[2][0]==1 and toimen_rank==3) or (riichi[3][0]==1 and kamitya_rank==3)) and (-diff_ten(tens,my_rank,3))>(12000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1 and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
+            or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==2 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==2 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==2 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+            or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1 and (-diff_ten(tens,my_rank,3))<(8000+kyotaku_num*1000+honba_num*300))
+            or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==3 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==3 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
             ):
             if len(effective_discards)>0:
                 if riichi[1][0]==1 and is_having_anpai_for_simotya and riichi[2][0]==0 and riichi[3][0]==0:
@@ -981,7 +983,7 @@ class MyAgent(CustomAgentBase):
                             return b
                         elif self.remaining_tiles[0][a.tile().type()]<=self.remaining_tiles[0][a.tile().type()]:
                             return a
-                effective_discards_removed_doras = copy.deepcopy(effective_discards)
+                effective_discards_removed_doras = [a for a in legal_discards if a.tile().type() in effective_discard_types]
                 for a in effective_discards_removed_doras:
                     if a.tile().type() in doras or a.tile().is_red(): # ドラは捨てない（他の選択肢がある場合）
                         if (a.tile().type() in zihai) and ((hand[0][a.tile().type()]==1 and hand[1][a.tile().type()]==0 and self.remaining_tiles[0][a.tile().type()]>=2) or (hand[1][a.tile().type()]==1 and hand[2][a.tile().type()]==0 and self.remaining_tiles[0][a.tile().type()]>=1)):
@@ -1093,10 +1095,10 @@ if __name__ == "__main__":
     agents = [                 
         MyAgent(),  # 自作Agent
         MenzenAgent(),
-        MenzenAgent(),  # mjxに実装されているAgent
-        # MenzenAgent(),  # mjxに実装されているAgent
+        MenzenAgent(),
+        MenzenAgent(),
 
-        mjx.agents.ShantenAgent(),  # mjxに実装されているAgent 
+        # mjx.agents.ShantenAgent(),  # mjxに実装されているAgent 
         # mjx.agents.ShantenAgent(),  # mjxに実装されているAgent 
         # mjx.agents.ShantenAgent(),  # mjxに実装されているAgent 
         ]

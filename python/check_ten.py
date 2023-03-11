@@ -1,5 +1,5 @@
 # 他家と自分の点数の差を返す feat[i]: i+1位との差
-def check_ten_difference(tens,my_rank) -> list:
+def check_ten_difference(tens,my_rank) -> list[int]:
     sorted_tens = sorted(tens,reverse=True)
     my_score = sorted_tens[my_rank-1]
     for i in range(4):
@@ -35,7 +35,13 @@ def is_possible_to_rank_up(tens,my_rank,dora_num,dealer_num,kyotaku,honba) -> bo
     elif dora_num==8:
         expected_ten = 16000
     elif dora_num==9:
+        expected_ten = 16000
+    elif dora_num==10:
         expected_ten = 24000
+    elif dora_num==11:
+        expected_ten = 24000
+    elif dora_num>=12:
+        expected_ten = 32000
     
     if dealer_num==0:
         expected_ten *= 1.5

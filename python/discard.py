@@ -117,8 +117,18 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                                 danger_list_1[suzi] /= 4 # 牌の危険度を下げる(スジandヤオ九牌)
                             elif suzi in [1,10,19]:
                                 danger_list_1[suzi] /= 3
+                                if remaining_tiles[0][suzi-1]==0:
+                                    if remaining_tiles[0][suzi]==1:
+                                        danger_list_1[suzi] /= 2
+                                    elif remaining_tiles[0][suzi]==0:
+                                        danger_list_1[suzi] = 0
                             elif suzi in [7,16,25]:
                                 danger_list_1[suzi] /= 3
+                                if remaining_tiles[0][suzi+1]==0:
+                                    if remaining_tiles[0][suzi]==1:
+                                        danger_list_1[suzi] /= 2
+                                    elif remaining_tiles[0][suzi]==0:
+                                        danger_list_1[suzi] = 0
                             else:
                                 danger_list_1[suzi] /= 2 # 牌の危険度を下げる(スジ)
                 elif discard_list_1[i]==2: # 他家がリーチ後に捨てた
@@ -129,35 +139,57 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                                 danger_list_1[suzi] /= 3 # 牌の危険度を下げる(スジandヤオ九牌)
                             elif suzi in [1,10,19]:
                                 danger_list_1[suzi] /= 2
+                                if remaining_tiles[0][suzi-1]==0:
+                                    if remaining_tiles[0][suzi]==1:
+                                        danger_list_1[suzi] /= 1.5
+                                    elif remaining_tiles[0][suzi]==0:
+                                        danger_list_1[suzi] = 0
                             elif suzi in [7,16,25]:
                                 danger_list_1[suzi] /= 2
+                                if remaining_tiles[0][suzi+1]==0:
+                                    if remaining_tiles[0][suzi]==1:
+                                        danger_list_1[suzi] /= 1.5
+                                    elif remaining_tiles[0][suzi]==0:
+                                        danger_list_1[suzi] = 0
                             else:
                                 danger_list_1[suzi] /= 1.5 # 牌の危険度を下げる(スジ)
                 if i in [1,10,19]:
-                    if remaining_tiles[0][i]==0 and remaining_tiles[0][i-1]<=1:
+                    if remaining_tiles[0][i]==0 and remaining_tiles[0][i-1]==1:
                         danger_list_1[i-1] /= 5
+                    elif remaining_tiles[0][i]==0 and remaining_tiles[0][i-1]==0:
+                        danger_list_1[i-1] = 0
                 elif i in [7,16,25]:
-                    if remaining_tiles[0][i]==0 and remaining_tiles[0][i+1]<=1:
+                    if remaining_tiles[0][i]==0 and remaining_tiles[0][i+1]==1:
                         danger_list_1[i+1] /= 5
+                    elif remaining_tiles[0][i]==0 and remaining_tiles[0][i+1]==0:
+                        danger_list_1[i+1] = 0
                 elif i in [2,11,20]:
                     if remaining_tiles[0][i]==0:
-                        if remaining_tiles[0][i-1]<=1:
+                        if remaining_tiles[0][i-1]==1:
                             danger_list_1[i-1] /= 5
-                        if remaining_tiles[0][i-2]<=1:
+                        elif remaining_tiles[0][i-1]==0:
+                            danger_list_1[i-1] = 0
+                        if remaining_tiles[0][i-2]==1:
                             danger_list_1[i-2] /= 5
+                        elif remaining_tiles[0][i-2]==0:
+                            danger_list_1[i-2] = 0
                         if remaining_tiles[0][i-1]>=2 and discard_list_1[i-2]==1:
                             danger_list_1[i-1] *= 6
-                        elif remaining_tiles[0][i-2]>=2 and discard_list_1[i-1]==1:
+                        if remaining_tiles[0][i-2]>=2 and discard_list_1[i-1]==1:
                             danger_list_1[i-2] *= 6
                 elif i in [6,15,24]:
                     if remaining_tiles[0][i]==0:
-                        if remaining_tiles[0][i+1]<=1:
+                        if remaining_tiles[0][i+1]==1:
                             danger_list_1[i+1] /= 5
-                        if remaining_tiles[0][i+2]<=1:
+                        elif remaining_tiles[0][i+1]==0:
+                            danger_list_1[i+1] = 0
+                        if remaining_tiles[0][i+2]==1:
                             danger_list_1[i+2] /= 5
+                        elif remaining_tiles[0][i+2]==0:
+                            danger_list_1[i+2] = 0
                         if remaining_tiles[0][i+1]>=2 and discard_list_1[i+2]==1:
                             danger_list_1[i+1] *= 6
-                        elif remaining_tiles[0][i+2]>=2 and discard_list_1[i+1]==1:
+                        if remaining_tiles[0][i+2]>=2 and discard_list_1[i+1]==1:
                             danger_list_1[i+2] *= 6
 
             if who[2][0]==1: # 対面リーチ
@@ -186,8 +218,18 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                                 danger_list_2[suzi] /= 4 # 牌の危険度を下げる(スジandヤオ九牌)
                             elif suzi in [1,10,19]:
                                 danger_list_2[suzi] /= 3
+                                if remaining_tiles[0][suzi-1]==0:
+                                    if remaining_tiles[0][suzi]==1:
+                                        danger_list_2[suzi] /= 2
+                                    elif remaining_tiles[0][suzi]==0:
+                                        danger_list_2[suzi] = 0
                             elif suzi in [7,16,25]:
                                 danger_list_2[suzi] /= 3
+                                if remaining_tiles[0][suzi+1]==0:
+                                    if remaining_tiles[0][suzi]==1:
+                                        danger_list_2[suzi] /= 2
+                                    elif remaining_tiles[0][suzi]==0:
+                                        danger_list_2[suzi] = 0
                             else:
                                 danger_list_2[suzi] /= 2 # 牌の危険度を下げる(スジ)
                 elif discard_list_2[i]==2: # 他家がリーチ後に捨てた
@@ -198,35 +240,57 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                                 danger_list_2[suzi] /= 3 # 牌の危険度を下げる(スジandヤオ九牌)
                             elif suzi in [1,10,19]:
                                 danger_list_2[suzi] /= 2
+                                if remaining_tiles[0][suzi-1]==0:
+                                    if remaining_tiles[0][suzi]==1:
+                                        danger_list_2[suzi] /= 1.5
+                                    elif remaining_tiles[0][suzi]==0:
+                                        danger_list_2[suzi] = 0
                             elif suzi in [7,16,25]:
                                 danger_list_2[suzi] /= 2
+                                if remaining_tiles[0][suzi+1]==0:
+                                    if remaining_tiles[0][suzi]==1:
+                                        danger_list_2[suzi] /= 1.5
+                                    elif remaining_tiles[0][suzi]==0:
+                                        danger_list_2[suzi] = 0
                             else:
                                 danger_list_2[suzi] /= 1.5 # 牌の危険度を下げる(スジ)
                 if i in [1,10,19]:
-                    if remaining_tiles[0][i]==0 and remaining_tiles[0][i-1]<=1:
+                    if remaining_tiles[0][i]==0 and remaining_tiles[0][i-1]==1:
                         danger_list_2[i-1] /= 5
+                    elif remaining_tiles[0][i]==0 and remaining_tiles[0][i-1]==0:
+                        danger_list_2[i-1] = 0
                 elif i in [7,16,25]:
-                    if remaining_tiles[0][i]==0 and remaining_tiles[0][i+1]<=1:
+                    if remaining_tiles[0][i]==0 and remaining_tiles[0][i+1]==1:
                         danger_list_2[i+1] /= 5
+                    elif remaining_tiles[0][i]==0 and remaining_tiles[0][i+1]==0:
+                        danger_list_2[i+1] = 0
                 elif i in [2,11,20]:
                     if remaining_tiles[0][i]==0:
-                        if remaining_tiles[0][i-1]<=1:
+                        if remaining_tiles[0][i-1]==1:
                             danger_list_2[i-1] /= 5
-                        if remaining_tiles[0][i-2]<=1:
+                        elif remaining_tiles[0][i-1]==0:
+                            danger_list_2[i-1] = 0
+                        if remaining_tiles[0][i-2]==1:
                             danger_list_2[i-2] /= 5
+                        elif remaining_tiles[0][i-2]==0:
+                            danger_list_2[i-2] = 0
                         if remaining_tiles[0][i-1]>=2 and discard_list_2[i-2]==1:
                             danger_list_2[i-1] *= 3
-                        elif remaining_tiles[0][i-2]>=2 and discard_list_2[i-1]==1:
+                        if remaining_tiles[0][i-2]>=2 and discard_list_2[i-1]==1:
                             danger_list_2[i-2] *= 3
                 elif i in [6,15,24]:
                     if remaining_tiles[0][i]==0:
-                        if remaining_tiles[0][i+1]<=1:
+                        if remaining_tiles[0][i+1]==1:
                             danger_list_2[i+1] /= 5
-                        if remaining_tiles[0][i+2]<=1:
+                        elif remaining_tiles[0][i+1]==0:
+                            danger_list_2[i+1] = 0
+                        if remaining_tiles[0][i+2]==1:
                             danger_list_2[i+2] /= 5
+                        elif remaining_tiles[0][i+2]==0:
+                            danger_list_2[i+2] = 0
                         if remaining_tiles[0][i+1]>=2 and discard_list_2[i+2]==1:
                             danger_list_2[i+1] *= 3
-                        elif remaining_tiles[0][i+2]>=2 and discard_list_2[i+1]==1:
+                        if remaining_tiles[0][i+2]>=2 and discard_list_2[i+1]==1:
                             danger_list_2[i+2] *= 3
 
             if who[3][0]==1: # 上家リーチ
@@ -255,8 +319,18 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                                 danger_list_3[suzi] /= 4 # 牌の危険度を下げる(スジandヤオ九牌)
                             elif suzi in [1,10,19]:
                                 danger_list_3[suzi] /= 3
+                                if remaining_tiles[0][suzi-1]==0:
+                                    if remaining_tiles[0][suzi]==1:
+                                        danger_list_3[suzi] /= 2
+                                    elif remaining_tiles[0][suzi]==0:
+                                        danger_list_3[suzi] = 0
                             elif suzi in [7,16,25]:
                                 danger_list_3[suzi] /= 3
+                                if remaining_tiles[0][suzi+1]==0:
+                                    if remaining_tiles[0][suzi]==1:
+                                        danger_list_3[suzi] /= 2
+                                    elif remaining_tiles[0][suzi]==0:
+                                        danger_list_3[suzi] = 0
                             else:
                                 danger_list_3[suzi] /= 2 # 牌の危険度を下げる(スジ)
                 elif discard_list_3[i]==2: # 他家がリーチ後に捨てた
@@ -267,35 +341,57 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                                 danger_list_3[suzi] /= 3 # 牌の危険度を下げる(スジandヤオ九牌)
                             elif suzi in [1,10,19]:
                                 danger_list_3[suzi] /= 2
+                                if remaining_tiles[0][suzi-1]==0:
+                                    if remaining_tiles[0][suzi]==1:
+                                        danger_list_3[suzi] /= 1.5
+                                    elif remaining_tiles[0][suzi]==0:
+                                        danger_list_3[suzi] = 0
                             elif suzi in [7,16,25]:
                                 danger_list_3[suzi] /= 2
+                                if remaining_tiles[0][suzi+1]==0:
+                                    if remaining_tiles[0][suzi]==1:
+                                        danger_list_3[suzi] /= 1.5
+                                    elif remaining_tiles[0][suzi]==0:
+                                        danger_list_3[suzi] = 0
                             else:
                                 danger_list_3[suzi] /= 1.5 # 牌の危険度を下げる(スジ)
                 if i in [1,10,19]:
-                    if remaining_tiles[0][i]==0 and remaining_tiles[0][i-1]<=1:
+                    if remaining_tiles[0][i]==0 and remaining_tiles[0][i-1]==1:
                         danger_list_3[i-1] /= 5
+                    elif remaining_tiles[0][i]==0 and remaining_tiles[0][i-1]==0:
+                        danger_list_3[i-1] = 0
                 elif i in [7,16,25]:
-                    if remaining_tiles[0][i]==0 and remaining_tiles[0][i+1]<=1:
+                    if remaining_tiles[0][i]==0 and remaining_tiles[0][i+1]==1:
                         danger_list_3[i+1] /= 5
+                    elif remaining_tiles[0][i]==0 and remaining_tiles[0][i+1]==0:
+                        danger_list_3[i+1] = 0
                 elif i in [2,11,20]:
                     if remaining_tiles[0][i]==0:
-                        if remaining_tiles[0][i-1]<=1:
+                        if remaining_tiles[0][i-1]==1:
                             danger_list_3[i-1] /= 5
-                        if remaining_tiles[0][i-2]<=1:
+                        elif remaining_tiles[0][i-1]==0:
+                            danger_list_3[i-1] = 0
+                        if remaining_tiles[0][i-2]==1:
                             danger_list_3[i-2] /= 5
+                        elif remaining_tiles[0][i-2]==0:
+                            danger_list_3[i-2] = 0
                         if remaining_tiles[0][i-1]>=2 and discard_list_3[i-2]==1:
                             danger_list_3[i-1] *= 3
-                        elif remaining_tiles[0][i-2]>=2 and discard_list_3[i-1]==1:
+                        if remaining_tiles[0][i-2]>=2 and discard_list_3[i-1]==1:
                             danger_list_3[i-2] *= 3
                 elif i in [6,15,24]:
                     if remaining_tiles[0][i]==0:
-                        if remaining_tiles[0][i+1]<=1:
+                        if remaining_tiles[0][i+1]==1:
                             danger_list_3[i+1] /= 5
-                        if remaining_tiles[0][i+2]<=1:
+                        elif remaining_tiles[0][i+1]==0:
+                            danger_list_3[i+1] = 0
+                        if remaining_tiles[0][i+2]==1:
                             danger_list_3[i+2] /= 5
+                        elif remaining_tiles[0][i+2]==0:
+                            danger_list_3[i+2] = 0
                         if remaining_tiles[0][i+1]>=2 and discard_list_3[i+2]==1:
                             danger_list_3[i+1] *= 3
-                        elif remaining_tiles[0][i+2]>=2 and discard_list_3[i+1]==1:
+                        if remaining_tiles[0][i+2]>=2 and discard_list_3[i+1]==1:
                             danger_list_3[i+2] *= 3
 
             for i in range(34):
@@ -330,8 +426,10 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
             danger_min = 1000000000
             danger_min_action = hand_discards[0]
             for a in hand_discards:
+                print(str(a.tile().type())+": "+str(danger_point[a.tile().type()]))
                 if danger_point[a.tile().type()]<danger_min:
                     danger_min = danger_point[a.tile().type()]
                     danger_min_action = a
+            print("selected: "+str(danger_min_action.tile().type()))
             
             return danger_min_action
