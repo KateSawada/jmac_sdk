@@ -378,9 +378,11 @@ class MyAgent(CustomAgentBase):
 
         # リーチの処理
         riichi_actions = [a for a in legal_actions if a.type() == ActionType.RIICHI]
-        if (not is_last_round_last_rank) and (((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(8000+kyotaku_num*1000+honba_num*300))
-            or ((my_rank==1 and round[6][0]==1 and dealer_num==0) and ((riichi[1][0]==1 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))))
-            or ((my_rank==1 and round[6][0]==1 and dealer_num!=0) and ((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)))
+        if (not is_last_round_last_rank) and (((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
+            or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3) or (riichi[2][0]==1 and toimen_rank==3) or (riichi[3][0]==1 and kamitya_rank==3)) and (-diff_ten(tens,my_rank,3))>(12000+kyotaku_num*1000+honba_num*300)  and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
+            or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==2 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==2 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==2 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))))
+            or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300)  and (-diff_ten(tens,my_rank,3))<(8000+kyotaku_num*1000+honba_num*300))
+            or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==3 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==3 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))))
             ):
             pass
         elif is_possible_to_aim_suanko_tanki:
@@ -973,10 +975,78 @@ class MyAgent(CustomAgentBase):
                         if hand[1][i]==1 and hand[2][i]==0 and self.action_mode==ActionModeType.FURO and (not self.target_yaku in [TargetYakuType.CHINITSU_MANZU,TargetYakuType.CHINITSU_PINZU,TargetYakuType.CHINITSU_SOZU]):
                             effective_discards.remove(a)
             for i in zihai: # 対子で持っているが売り切れている字牌は捨てる
-                if (effective_draw[i]==1 or hand[2][i]==0) and self.remaining_tiles[0][i]==0:
+                if (hand[1][i]==1 and hand[2][i]==0) and self.remaining_tiles[0][i]==0:
                     effective_zihai_discards = [a for a in legal_discards if a.tile().type() == i]
                     for a in effective_zihai_discards:
                         effective_discards.append(a)
+            for i in yakuhai: # 暗刻で持っている役牌は捨てない
+                if (hand[2][i]==1):
+                    yakuhai_anko_discard = [a for a in legal_discards if a.tile().type() == i]
+                    for a in yakuhai_anko_discard:
+                        effective_discards.remove(a)
+            # 大三元を目指すための条件
+            if (hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and (hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types)):
+                if hand[0][33]==1 and self.remaining_tiles[0][33]!=0:
+                    if (33 in effective_discard_types):
+                        yakuhai_discard = [a for a in legal_discards if a.tile().type() == 33]
+                        for a in yakuhai_discard:
+                            effective_discards.remove(a)
+
+            elif (hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and (hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types)):
+                if hand[0][32]==1 and self.remaining_tiles[0][32]!=0:
+                    if (32 in effective_discard_types):
+                        yakuhai_discard = [a for a in legal_discards if a.tile().type() == 32]
+                        for a in yakuhai_discard:
+                            effective_discards.remove(a)
+            elif (hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types)) and (hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types)):
+                if hand[0][31]==1 and self.remaining_tiles[0][31]!=0:
+                    if (31 in effective_discard_types):
+                        yakuhai_discard = [a for a in legal_discards if a.tile().type() == 31]
+                        for a in yakuhai_discard:
+                            effective_discards.remove(a)
+            elif ((((31 in toitsu_types) and (self.remaining_tiles[0][31]>0)) or hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and (((32 in toitsu_types) and (self.remaining_tiles[0][32]>0)) or hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types))):
+                if hand[0][33]==1 and self.remaining_tiles[0][33]!=0:
+                    if (31 in effective_discard_types):
+                        yakuhai_discard = [a for a in legal_discards if a.tile().type() == 31]
+                        for a in yakuhai_discard:
+                            effective_discards.remove(a)
+                    if (32 in effective_discard_types):
+                        yakuhai_discard = [a for a in legal_discards if a.tile().type() == 32]
+                        for a in yakuhai_discard:
+                            effective_discards.remove(a)
+                    if (33 in effective_discard_types):
+                        yakuhai_discard = [a for a in legal_discards if a.tile().type() == 33]
+                        for a in yakuhai_discard:
+                            effective_discards.remove(a)
+            elif ((((31 in toitsu_types) and (self.remaining_tiles[0][31]>0)) or hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and (((33 in toitsu_types) and (self.remaining_tiles[0][33]>0)) or hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types))):
+                if hand[0][32]==1 and self.remaining_tiles[0][32]!=0:
+                    if (31 in effective_discard_types):
+                        yakuhai_discard = [a for a in legal_discards if a.tile().type() == 31]
+                        for a in yakuhai_discard:
+                            effective_discards.remove(a)
+                    if (32 in effective_discard_types):
+                        yakuhai_discard = [a for a in legal_discards if a.tile().type() == 32]
+                        for a in yakuhai_discard:
+                            effective_discards.remove(a)
+                    if (33 in effective_discard_types):
+                        yakuhai_discard = [a for a in legal_discards if a.tile().type() == 33]
+                        for a in yakuhai_discard:
+                            effective_discards.remove(a)
+            elif ((((32 in toitsu_types) and (self.remaining_tiles[0][32]>0)) or hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types)) and (((33 in toitsu_types) and (self.remaining_tiles[0][33]>0)) or hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types))):
+                if hand[0][31]==1 and self.remaining_tiles[0][31]!=0:
+                    if (31 in effective_discard_types):
+                        yakuhai_discard = [a for a in legal_discards if a.tile().type() == 31]
+                        for a in yakuhai_discard:
+                            effective_discards.remove(a)
+                    if (32 in effective_discard_types):
+                        yakuhai_discard = [a for a in legal_discards if a.tile().type() == 32]
+                        for a in yakuhai_discard:
+                            effective_discards.remove(a)
+                    if (33 in effective_discard_types):
+                        yakuhai_discard = [a for a in legal_discards if a.tile().type() == 33]
+                        for a in yakuhai_discard:
+                            effective_discards.remove(a)
+
             if self.target_yaku==TargetYakuType.CHINITSU_MANZU:
                 tinitsu_discards = [a for a in legal_discards if (a.tile().type() in pinzu) or (a.tile().type() in sozu) or (a.tile().type() in zihai)]
                 if len(tinitsu_discards)>0:
