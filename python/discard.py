@@ -428,10 +428,10 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
             danger_min = 1000000000
             danger_min_action = hand_discards[0]
             for a in hand_discards:
-                print(str(a.tile().type())+": "+str(danger_point[a.tile().type()]))
+                # print(str(a.tile().type())+": "+str(danger_point[a.tile().type()]))
                 if danger_point[a.tile().type()]<danger_min:
                     danger_min = danger_point[a.tile().type()]
                     danger_min_action = a
-            print("selected: "+str(danger_min_action.tile().type()))
+            # print("selected: "+str(danger_min_action.tile().type()))
             
             return danger_min_action

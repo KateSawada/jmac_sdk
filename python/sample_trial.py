@@ -719,6 +719,26 @@ class MyAgent(CustomAgentBase):
                     if is_last_round_last_rank and (pon_actions[0].open().last_tile().type() in yakuhai) and (not self.action_mode in [ActionModeType.FURO,ActionModeType.FURO_YAKUHAI]) and (not is_possible_to_rank_up(tens,my_rank,dora_total_num,dealer_num,kyotaku,honba)):
                         return pass_action
                     return pon_actions[0]
+            
+            # 大三元用の処理
+            if (hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and (hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types)):
+                if pon_actions[0].open().last_tile().type()==33:
+                    return pon_actions[0]
+            elif (hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and (hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types)):
+                if pon_actions[0].open().last_tile().type()==32:
+                    return pon_actions[0]
+            elif (hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types)) and (hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types)):
+                if pon_actions[0].open().last_tile().type()==31:
+                    return pon_actions[0]
+            elif (((31 in toitsu_types) or hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and ((32 in toitsu_types) or hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types))):
+                if pon_actions[0].open().last_tile().type() in [31,32,33]:
+                    return pon_actions[0]
+            elif (((31 in toitsu_types) or hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and ((33 in toitsu_types) or hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types))):
+                if pon_actions[0].open().last_tile().type() in [31,32,33]:
+                    return pon_actions[0]
+            elif (((32 in toitsu_types) or hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types)) and ((33 in toitsu_types) or hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types))):
+                if pon_actions[0].open().last_tile().type() in [31,32,33]:
+                    return pon_actions[0]
 
             count_toitsu = 0
             toitsu_feat = []
@@ -1063,6 +1083,9 @@ class MyAgent(CustomAgentBase):
                         for a in yakuhai_discard:
                             if a in effective_discards:
                                 effective_discards.remove(a)
+            
+            if len(effective_discards) <= 0:
+                effective_discards = [a for a in legal_discards if a.tile().type() in effective_discard_types]
 
             if self.target_yaku==TargetYakuType.CHINITSU_MANZU:
                 tinitsu_discards = [a for a in legal_discards if (a.tile().type() in pinzu) or (a.tile().type() in sozu) or (a.tile().type() in zihai)]
