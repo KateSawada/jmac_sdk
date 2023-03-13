@@ -376,15 +376,41 @@ class MyAgent(CustomAgentBase):
         if len(win_actions) >= 1:
             return win_actions[0]
 
+        # 副露の数をカウント
+        count_furo = 0
+        count_furo_list = [0 for _ in range(34)]
+        for i in range(34):
+            for j in range(4):
+                if opend_tiles[j][i]==1:
+                    count_furo_list[i] += 1
+                    if i in doras:
+                        dora_total_num += 1
+        if opend_tiles[4][0]==1:
+            dora_total_num += 1
+        if opend_tiles[5][0]==1:
+            dora_total_num += 1
+        if opend_tiles[6][0]==1:
+            dora_total_num += 1
+        for i in count_furo_list:
+            count_furo += i
+        if self.ankan_num > 0:
+            count_furo -= self.ankan_num*4
+            for i in self.ankan_types:
+                count_furo_list[i] = 0
+        if count_furo>0:
+            self.action_mode = ActionModeType.FURO # 鳴いている
+            for i in yakuhai:
+                if count_furo_list[i]>=3:
+                    self.action_mode = ActionModeType.FURO_YAKUHAI # 既に役がある鳴き
+        
+        adjust_by_dora = 0
+        if dora_total_num>=4:
+            adjust_by_dora = 1
+
         # リーチの処理
         riichi_actions = [a for a in legal_actions if a.type() == ActionType.RIICHI]
         if (not is_last_round_last_rank) and (((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
             or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3) or (riichi[2][0]==1 and toimen_rank==3) or (riichi[3][0]==1 and kamitya_rank==3)) and (-diff_ten(tens,my_rank,3))>(12000+kyotaku_num*1000+honba_num*300)  and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
-            or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==2 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==2 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==2 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))))
-            or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300)  and (-diff_ten(tens,my_rank,3))<(8000+kyotaku_num*1000+honba_num*300))
-            or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==3 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==3 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))))
-            or ((my_rank==2 and round[6][0]==1 and dealer_num==0) and ((riichi[1][0]==1 and simotya_rank==1 and (-diff_ten(tens,my_rank,simotya_rank)>(18000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==1 and (-diff_ten(tens,my_rank,toimen_rank)>(18000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(18000+kyotaku_num*1000+honba_num*100)))))
-            or ((my_rank==2 and round[6][0]==1 and dealer_num!=0) and ((riichi[1][0]==1 and simotya_rank==1 and (-diff_ten(tens,my_rank,simotya_rank)>(12000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==1 and (-diff_ten(tens,my_rank,toimen_rank)>(12000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(12000+kyotaku_num*1000+honba_num*100)))))
             ):
             pass
         elif is_possible_to_aim_suanko_tanki:
@@ -447,32 +473,7 @@ class MyAgent(CustomAgentBase):
                 if self.remaining_tiles[0][i]==0 and hand[0][i]==0: # 牌が売り切れていたら
                     self.action_mode = ActionModeType.MENZEN
 
-        # 副露の数をカウント
-        count_furo = 0
-        count_furo_list = [0 for _ in range(34)]
-        for i in range(34):
-            for j in range(4):
-                if opend_tiles[j][i]==1:
-                    count_furo_list[i] += 1
-                    if i in doras:
-                        dora_total_num += 1
-        if opend_tiles[4][0]==1:
-            dora_total_num += 1
-        if opend_tiles[5][0]==1:
-            dora_total_num += 1
-        if opend_tiles[6][0]==1:
-            dora_total_num += 1
-        for i in count_furo_list:
-            count_furo += i
-        if self.ankan_num > 0:
-            count_furo -= self.ankan_num*4
-            for i in self.ankan_types:
-                count_furo_list[i] = 0
-        if count_furo>0:
-            self.action_mode = ActionModeType.FURO # 鳴いている
-            for i in yakuhai:
-                if count_furo_list[i]>=3:
-                    self.action_mode = ActionModeType.FURO_YAKUHAI # 既に役がある鳴き
+        # 他家の副露をカウント
         count_furo_simotya = 0
         count_dora_simotya = 0
         is_yakuhai_furo_simotya = False
@@ -677,11 +678,44 @@ class MyAgent(CustomAgentBase):
         pon_actions = [a for a in legal_actions if a.type() == ActionType.PON]
         if len(pon_actions) >= 1:
             pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
+            # 大三元用の処理
+            if (hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and (hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types)):
+                if pon_actions[0].open().last_tile().type()==33:
+                    return pon_actions[0]
+            elif (hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and (hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types)):
+                if pon_actions[0].open().last_tile().type()==32:
+                    return pon_actions[0]
+            elif (hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types)) and (hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types)):
+                if pon_actions[0].open().last_tile().type()==31:
+                    return pon_actions[0]
+            elif (((31 in toitsu_types) or hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and ((32 in toitsu_types) or hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types))):
+                if pon_actions[0].open().last_tile().type() in [31,32,33]:
+                    return pon_actions[0]
+            elif (((31 in toitsu_types) or hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and ((33 in toitsu_types) or hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types))):
+                if pon_actions[0].open().last_tile().type() in [31,32,33]:
+                    return pon_actions[0]
+            elif (((32 in toitsu_types) or hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types)) and ((33 in toitsu_types) or hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types))):
+                if pon_actions[0].open().last_tile().type() in [31,32,33]:
+                    return pon_actions[0]
+                
             if self.target_yaku==TargetYakuType.TSUISO:
                 if pon_actions[0].open().last_tile().type() in zihai:
                     return pon_actions[0]
                 else:
                     return pass_action
+                
+            if (not is_last_round_last_rank) and ((((riichi[1][0]==1 and riichi[2][0]==1) or (riichi[1][0]==1 and riichi[3][0]==1) or (riichi[2][0]==1 and riichi[3][0]==1)) and shanten[1+adjust_by_dora][0]==1)
+                or ((riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1) and shanten[0][0]==1)
+                or (round[5][0]==1 and (riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[0][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>18000))
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3) or (riichi[2][0]==1 and toimen_rank==3) or (riichi[3][0]==1 and kamitya_rank==3)) and (-diff_ten(tens,my_rank,3))>(12000+kyotaku_num*1000+honba_num*300) and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==2 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==2 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==2 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1 and (-diff_ten(tens,my_rank,3))<(8000+kyotaku_num*1000+honba_num*300))
+                or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==3 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==3 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                or ((my_rank==2 and round[6][0]==1 and dealer_num==0) and ((riichi[1][0]==1 and simotya_rank==1 and (-diff_ten(tens,my_rank,simotya_rank)>(18000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==1 and (-diff_ten(tens,my_rank,toimen_rank)>(18000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(18000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                or ((my_rank==2 and round[6][0]==1 and dealer_num!=0) and ((riichi[1][0]==1 and simotya_rank==1 and (-diff_ten(tens,my_rank,simotya_rank)>(12000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==1 and (-diff_ten(tens,my_rank,toimen_rank)>(12000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(12000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                ):
+                return pass_action
 
             if self.target_yaku==TargetYakuType.CHINITSU_MANZU:
                 if pon_actions[0].open().last_tile().type() in manzu and pon_actions[0].open().last_tile().type() in effective_draw_types:
@@ -719,26 +753,6 @@ class MyAgent(CustomAgentBase):
                     if is_last_round_last_rank and (pon_actions[0].open().last_tile().type() in yakuhai) and (not self.action_mode in [ActionModeType.FURO,ActionModeType.FURO_YAKUHAI]) and (not is_possible_to_rank_up(tens,my_rank,dora_total_num,dealer_num,kyotaku,honba)):
                         return pass_action
                     return pon_actions[0]
-            
-            # 大三元用の処理
-            if (hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and (hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types)):
-                if pon_actions[0].open().last_tile().type()==33:
-                    return pon_actions[0]
-            elif (hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and (hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types)):
-                if pon_actions[0].open().last_tile().type()==32:
-                    return pon_actions[0]
-            elif (hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types)) and (hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types)):
-                if pon_actions[0].open().last_tile().type()==31:
-                    return pon_actions[0]
-            elif (((31 in toitsu_types) or hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and ((32 in toitsu_types) or hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types))):
-                if pon_actions[0].open().last_tile().type() in [31,32,33]:
-                    return pon_actions[0]
-            elif (((31 in toitsu_types) or hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and ((33 in toitsu_types) or hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types))):
-                if pon_actions[0].open().last_tile().type() in [31,32,33]:
-                    return pon_actions[0]
-            elif (((32 in toitsu_types) or hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types)) and ((33 in toitsu_types) or hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types))):
-                if pon_actions[0].open().last_tile().type() in [31,32,33]:
-                    return pon_actions[0]
 
             count_toitsu = 0
             toitsu_feat = []
@@ -771,6 +785,18 @@ class MyAgent(CustomAgentBase):
         if len(chi_actions) >= 1:
             pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
             last_tile = chi_actions[0].open().last_tile()
+            if (not is_last_round_last_rank) and ((((riichi[1][0]==1 and riichi[2][0]==1) or (riichi[1][0]==1 and riichi[3][0]==1) or (riichi[2][0]==1 and riichi[3][0]==1)) and shanten[1+adjust_by_dora][0]==1)
+                or ((riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1) and shanten[0][0]==1)
+                or (round[5][0]==1 and (riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[0][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>18000))
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3) or (riichi[2][0]==1 and toimen_rank==3) or (riichi[3][0]==1 and kamitya_rank==3)) and (-diff_ten(tens,my_rank,3))>(12000+kyotaku_num*1000+honba_num*300) and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==2 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==2 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==2 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1 and (-diff_ten(tens,my_rank,3))<(8000+kyotaku_num*1000+honba_num*300))
+                or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==3 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==3 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                or ((my_rank==2 and round[6][0]==1 and dealer_num==0) and ((riichi[1][0]==1 and simotya_rank==1 and (-diff_ten(tens,my_rank,simotya_rank)>(18000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==1 and (-diff_ten(tens,my_rank,toimen_rank)>(18000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(18000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                or ((my_rank==2 and round[6][0]==1 and dealer_num!=0) and ((riichi[1][0]==1 and simotya_rank==1 and (-diff_ten(tens,my_rank,simotya_rank)>(12000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==1 and (-diff_ten(tens,my_rank,toimen_rank)>(12000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(12000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                ):
+                return pass_action
             if self.target_yaku==TargetYakuType.TSUISO:
                 return pass_action
             elif self.target_yaku==TargetYakuType.CHINITSU_MANZU or self.target_yaku==TargetYakuType.HONITSU_MANZU:
@@ -832,6 +858,19 @@ class MyAgent(CustomAgentBase):
         if len(open_kan_actions) >= 1:
             if self.action_mode==ActionModeType.FURO_YAKUHAI and (riichi[1][0]==0 and riichi[2][0]==0 and riichi[3][0]==0):
                 return open_kan_actions[0]
+            elif (not is_last_round_last_rank) and ((((riichi[1][0]==1 and riichi[2][0]==1) or (riichi[1][0]==1 and riichi[3][0]==1) or (riichi[2][0]==1 and riichi[3][0]==1)) and shanten[1+adjust_by_dora][0]==1)
+                or ((riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1) and shanten[0][0]==1)
+                or (round[5][0]==1 and (riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[0][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>18000))
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3) or (riichi[2][0]==1 and toimen_rank==3) or (riichi[3][0]==1 and kamitya_rank==3)) and (-diff_ten(tens,my_rank,3))>(12000+kyotaku_num*1000+honba_num*300) and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==2 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==2 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==2 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1 and (-diff_ten(tens,my_rank,3))<(8000+kyotaku_num*1000+honba_num*300))
+                or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==3 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==3 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                or ((my_rank==2 and round[6][0]==1 and dealer_num==0) and ((riichi[1][0]==1 and simotya_rank==1 and (-diff_ten(tens,my_rank,simotya_rank)>(18000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==1 and (-diff_ten(tens,my_rank,toimen_rank)>(18000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(18000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                or ((my_rank==2 and round[6][0]==1 and dealer_num!=0) and ((riichi[1][0]==1 and simotya_rank==1 and (-diff_ten(tens,my_rank,simotya_rank)>(12000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==1 and (-diff_ten(tens,my_rank,toimen_rank)>(12000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(12000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                ):
+                pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
+                return pass_action
             else:
                 pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
                 return pass_action
@@ -840,6 +879,18 @@ class MyAgent(CustomAgentBase):
         added_kan_actions = [a for a in legal_actions if a.type() == ActionType.ADDED_KAN]
         if len(added_kan_actions) >= 1:
             if shanten[2][0]==1 and (riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1):
+                pass
+            elif (not is_last_round_last_rank) and ((((riichi[1][0]==1 and riichi[2][0]==1) or (riichi[1][0]==1 and riichi[3][0]==1) or (riichi[2][0]==1 and riichi[3][0]==1)) and shanten[1+adjust_by_dora][0]==1)
+                or ((riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1) and shanten[0][0]==1)
+                or (round[5][0]==1 and (riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[0][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>18000))
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1)
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3) or (riichi[2][0]==1 and toimen_rank==3) or (riichi[3][0]==1 and kamitya_rank==3)) and (-diff_ten(tens,my_rank,3))>(12000+kyotaku_num*1000+honba_num*300) and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1)
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==2 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==2 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==2 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1 and (-diff_ten(tens,my_rank,3))<(8000+kyotaku_num*1000+honba_num*300))
+                or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==3 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==3 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                or ((my_rank==2 and round[6][0]==1 and dealer_num==0) and ((riichi[1][0]==1 and simotya_rank==1 and (-diff_ten(tens,my_rank,simotya_rank)>(18000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==1 and (-diff_ten(tens,my_rank,toimen_rank)>(18000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(18000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                or ((my_rank==2 and round[6][0]==1 and dealer_num!=0) and ((riichi[1][0]==1 and simotya_rank==1 and (-diff_ten(tens,my_rank,simotya_rank)>(12000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==1 and (-diff_ten(tens,my_rank,toimen_rank)>(12000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==1 and (-diff_ten(tens,my_rank,kamitya_rank)>(12000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
+                ):
                 pass
             else:
                 return added_kan_actions[0]
@@ -880,9 +931,6 @@ class MyAgent(CustomAgentBase):
 
         # 打牌の処理
         if not is_discarded:
-            adjust_by_dora = 0
-            if dora_total_num>=4:
-                adjust_by_dora = 1
             legal_discards = [a for a in legal_actions if a.type() in [ActionType.DISCARD, ActionType.TSUMOGIRI]]
             effective_discard_types = obs.curr_hand().effective_discard_types()
             effective_discards = [a for a in legal_discards if a.tile().type() in effective_discard_types]
@@ -967,8 +1015,8 @@ class MyAgent(CustomAgentBase):
                 or ((riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1) and shanten[0][0]==1)
                 or (((riichi[1][0]==1 and dealer_num==1) or (riichi[2][0]==1 and dealer_num==2) or (riichi[3][0]==1 and dealer_num==3)) and shanten[1+adjust_by_dora][0]==1)
                 or (round[5][0]==1 and (riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[0][0]==1 and (my_rank==1 and (-diff_ten(tens,my_rank,2))>18000))
-                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1 and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
-                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3) or (riichi[2][0]==1 and toimen_rank==3) or (riichi[3][0]==1 and kamitya_rank==3)) and (-diff_ten(tens,my_rank,3))>(12000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1 and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
+                or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3) or (riichi[2][0]==1 and toimen_rank==3) or (riichi[3][0]==1 and kamitya_rank==3)) and (-diff_ten(tens,my_rank,3))>(12000+kyotaku_num*1000+honba_num*300) and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))
                 or ((my_rank==1 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==2 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==2 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==2 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
                 or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300) and shanten[0][0]==1 and (-diff_ten(tens,my_rank,3))<(8000+kyotaku_num*1000+honba_num*300))
                 or ((my_rank==2 and round[6][0]==1) and ((riichi[1][0]==1 and simotya_rank==3 and (-diff_ten(tens,my_rank,simotya_rank)>(8000+kyotaku_num*1000+honba_num*400))) or (riichi[2][0]==1 and toimen_rank==3 and (-diff_ten(tens,my_rank,toimen_rank)>(8000+kyotaku_num*1000+honba_num*100))) or (riichi[3][0]==1 and kamitya_rank==3 and (-diff_ten(tens,my_rank,kamitya_rank)>(8000+kyotaku_num*1000+honba_num*100)))) and shanten[0][0]==1)
@@ -998,8 +1046,8 @@ class MyAgent(CustomAgentBase):
                     if a.tile().type()==i:
                         if hand[1][i]==1 and hand[2][i]==0 and self.action_mode==ActionModeType.FURO and (not self.target_yaku in [TargetYakuType.CHINITSU_MANZU,TargetYakuType.CHINITSU_PINZU,TargetYakuType.CHINITSU_SOZU]):
                             effective_discards.remove(a)
-            for i in zihai: # 対子で持っているが売り切れている字牌は捨てる
-                if (hand[1][i]==1 and hand[2][i]==0) and self.remaining_tiles[0][i]==0:
+            for i in zihai: # 対子で持っているが売り切れている字牌は捨てる(ドラは除く)
+                if (hand[1][i]==1 and hand[2][i]==0) and self.remaining_tiles[0][i]==0 and (not (i in doras)):
                     effective_zihai_discards = [a for a in legal_discards if a.tile().type() == i]
                     for a in effective_zihai_discards:
                         effective_discards.append(a)
