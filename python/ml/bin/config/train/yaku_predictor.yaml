@@ -1,0 +1,31 @@
+# Interval setting
+train_max_steps: 500000               # Number of pre-training steps.
+save_interval_steps: 100000           # Interval steps to save checkpoint.
+eval_interval_steps: 2000             # Interval steps to evaluate the network.
+log_interval_steps: 2000              # Interval steps to record the training log.
+resume:                               # Epoch to resume training.
+
+# Adversarial loss setting
+bce_loss:
+  _target_: torch.nn.BCELoss
+
+total_acc:
+  _target_: ml.losses.TotalAcc
+
+binary_acc:
+  _target_: ml.losses.BinaryAcc
+
+yaku_predictor_optimizer:
+  _target_: torch.optim.Adam
+  lr: 0.1
+  betas: [0.5, 0.9]
+  weight_decay: 0.0
+yaku_predictor_scheduler:
+  _target_: torch.optim.lr_scheduler.MultiStepLR
+  gamma: 0.5
+  milestones:
+    - 100000
+    - 200000
+    - 300000
+    - 400000
+grad_norm: 10
