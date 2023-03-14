@@ -179,7 +179,7 @@ class MyAgent(CustomAgentBase):
         self.remaining_tiles = [[4 for _ in range(34)],[1,1,1]]
         for dora in doras:
             opened_dora = 0
-            if not dora in [0,9,18,27,31]:
+            if not (dora in [0,9,18,27,31]):
                 opened_dora = dora-1
             elif dora==0:
                 opened_dora = 8

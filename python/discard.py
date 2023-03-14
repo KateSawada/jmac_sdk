@@ -65,7 +65,7 @@ def discard_effective(hand_discards,discarded_tiles,doras,remaining_tiles):
                             effective_list[i] *= 0.7*bonus
             
             # 最も効果的でない（最も不必要な）牌を選択
-            effective_min = 100000
+            effective_min = 1000000
             for a in hand_discards:
                 if effective_list[a.tile().type()]<effective_min:
                     effective_min = effective_list[a.tile().type()]
@@ -101,6 +101,7 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
             else:
                 for i in range(27,34):
                     danger_list_1[i] /= 2 # 字牌の危険度を一律下げる
+
             discard_list_1 = [0 for _ in range(34)]
             if who[1][0]==1:
                 for i in range(34):
@@ -176,9 +177,9 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                         elif remaining_tiles[0][i-2]==0:
                             danger_list_1[i-2] = 0
                         if remaining_tiles[0][i-1]>=2 and discard_list_1[i-2]==1:
-                            danger_list_1[i-1] *= 6
+                            danger_list_1[i-1] *= 3
                         if remaining_tiles[0][i-2]>=2 and discard_list_1[i-1]==1:
-                            danger_list_1[i-2] *= 6
+                            danger_list_1[i-2] *= 3
                 elif i in [6,15,24]:
                     if remaining_tiles[0][i]==0:
                         if remaining_tiles[0][i+1]==1:
@@ -190,9 +191,9 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                         elif remaining_tiles[0][i+2]==0:
                             danger_list_1[i+2] = 0
                         if remaining_tiles[0][i+1]>=2 and discard_list_1[i+2]==1:
-                            danger_list_1[i+1] *= 6
+                            danger_list_1[i+1] *= 3
                         if remaining_tiles[0][i+2]>=2 and discard_list_1[i+1]==1:
-                            danger_list_1[i+2] *= 6
+                            danger_list_1[i+2] *= 3
 
             if who[2][0]==1: # 対面リーチ
                 danger_list_2[34] = 100
@@ -425,13 +426,13 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
                 danger_point[i] = danger_sum[i]
 
             # 最も安全な牌を選択
-            danger_min = 1000000000
+            danger_min = 100000000
             danger_min_action = hand_discards[0]
             for a in hand_discards:
-                # print(str(a.tile().type())+": "+str(danger_point[a.tile().type()]))
+                print(str(a.tile().type())+": "+str(danger_point[a.tile().type()]))
                 if danger_point[a.tile().type()]<danger_min:
                     danger_min = danger_point[a.tile().type()]
                     danger_min_action = a
-            # print("selected: "+str(danger_min_action.tile().type()))
+            print("selected: "+str(danger_min_action.tile().type()))
             
             return danger_min_action
