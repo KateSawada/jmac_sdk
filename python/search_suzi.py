@@ -1,4 +1,4 @@
-# search suzi of effective tile
+# スジやくっつく可能性のある牌を判定する
 
 def check_effective_hai(hai):
     if hai==0:

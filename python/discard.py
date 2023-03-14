@@ -1,4 +1,4 @@
-# discard best tile
+# 状況に応じた1番良い牌を切る
 
 from search_suzi import *
 

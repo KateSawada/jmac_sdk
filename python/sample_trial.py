@@ -121,7 +121,6 @@ class MyAgent(CustomAgentBase):
                 yakuhai_toimen.append(28)
             if not (28 in yakuhai_kamitya):
                 yakuhai_kamitya.append(28)
-
         else:
             if not (27 in yakuhai):
                 yakuhai.append(27)
@@ -132,6 +131,7 @@ class MyAgent(CustomAgentBase):
             if not (27 in yakuhai_kamitya):
                 yakuhai_kamitya.append(27)
         
+        # 自分の座り位置を特定
         if round[0][0]==0 and dealer_num==0:
             self.my_player_id = 0
         elif round[0][0]==0 and dealer_num==1:
@@ -141,27 +141,35 @@ class MyAgent(CustomAgentBase):
         elif round[0][0]==0 and dealer_num==3:
             self.my_player_id = 1
         
+        # 供託,本場数のカウント
         for i in range(5):
             if kyotaku[i][0]==1:
                 kyotaku_num += 1
             if honba[i][0]==1:
                 honba_num += 1
+        
+        # 効果的なツモり牌の種類を保存
         effective_draw_types = []
         for i in range(34):
             if effective_draw[i]==1:
                 effective_draw_types.append(i)
+
+        # 自分の捨て牌の種類を保存
         my_discarded_tiles_types = []
         for i in range(3):
             for j in range(34):
                 if discarded_tiles[i][j]==1:
                     if not (j in my_discarded_tiles_types):
                         my_discarded_tiles_types.append(j)
+        
+        # 手持ちのドラの数を合計に加算
         dora_num_in_hand = 0
         for i in range(13):
             if dora_in_hand[i][0]==1:
                 dora_num_in_hand += 1
         dora_total_num += dora_num_in_hand
         
+        # 全員の順位を特定
         for i in range(3):
             if ranking[i][0]==1:
                 my_rank += 1
@@ -192,7 +200,7 @@ class MyAgent(CustomAgentBase):
             elif dora==31:
                 opened_dora = 33   
             self.remaining_tiles[0][opened_dora] -= 1
-
+            # 手牌にある赤ドラを残り牌から除外
         check_red_dora = [0,0,0]
         if hand[4][0]==1:
             check_red_dora[0]=1
@@ -201,6 +209,7 @@ class MyAgent(CustomAgentBase):
         elif hand[6][0]==1:
             check_red_dora[2]=1
         self.remaining_tiles = [self.remaining_tiles[0], [x-y for (x,y) in zip(self.remaining_tiles[1],check_red_dora)]]
+            # 手牌を残り牌から除外
         for i in range(4):
             self.remaining_tiles = [[x-y for (x,y) in zip(self.remaining_tiles[0],hand[i])],self.remaining_tiles[1]]
 
@@ -208,6 +217,7 @@ class MyAgent(CustomAgentBase):
         ignored_discards = [0 for _ in range(34)]
 
         for e in obs.events():
+            # 初期化処理
             if e.type() in [EventType.ABORTIVE_DRAW_NORMAL, EventType.ABORTIVE_DRAW_NAGASHI_MANGAN, 
                             EventType.ABORTIVE_DRAW_FOUR_WINDS, EventType.ABORTIVE_DRAW_FOUR_KANS,
                             EventType.ABORTIVE_DRAW_THREE_RONS, EventType.ABORTIVE_DRAW_FOUR_RIICHIS,
@@ -319,7 +329,7 @@ class MyAgent(CustomAgentBase):
                     if riichi[i+1][0]==1:
                         after_riichi_discards_list[i][j] = ignored_discards[j]-self.before_riichi_discards_list[i][j]
 
-        # 行動選択処理
+        # 行動選択処理用の変数の初期化
         self.action_mode = ActionModeType.MENZEN
         self.target_yaku = TargetYakuType.NO_TARGET
         dangerous_situation = riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1 or self.remaining_tiles_num<15 # 誰かがリーチ、または流局間際である
@@ -1008,7 +1018,7 @@ class MyAgent(CustomAgentBase):
                             if s==t and t==k:
                                 is_having_anpai_for_all = True
 
-            # ベタ降り
+            # ベタ降りの条件
             if (not is_last_round_last_rank) and (((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[2+adjust_by_dora][0]==1 and dealer_num!=0)
                 or ((riichi[1][0]==1 or riichi[2][0]==1 or riichi[3][0]==1) and shanten[3+adjust_by_dora][0]==1 and dealer_num==0)
                 or (((riichi[1][0]==1 and riichi[2][0]==1) or (riichi[1][0]==1 and riichi[3][0]==1) or (riichi[2][0]==1 and riichi[3][0]==1)) and shanten[1+adjust_by_dora][0]==1)
