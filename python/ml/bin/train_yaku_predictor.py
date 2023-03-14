@@ -287,7 +287,7 @@ class Collater(object):
         y_batch = []
         for idx in range(len(batch)):
             filename, obs, y = batch[idx]
-            seat = int(os.path.basename(os.path.dirname(filename)))  # 0: 東 in 東一局
+            seat = int(os.path.basename(filename))  # 0: 東 in 東一局
             current_hand = np.sum(obs[0:7, :], axis=0)
             tsumogiri = np.sum(obs[13:16, :], axis=0)
             discarded_from_hand = np.sum(obs[25:28, :], axis=0)
@@ -296,7 +296,7 @@ class Collater(object):
             round_ = int(np.sum(obs[103: 110, 0]))
             round_wind[round_ // 4] = 1
             own_wind = np.zeros(4)
-            own_wind[(round_ - seat) // 4] = 1
+            own_wind[(seat - round_) % 4] = 1
 
             obs = np.concatenate(
                 (

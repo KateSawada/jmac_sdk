@@ -40,13 +40,13 @@ ignore:
 - 53  # 裏ドラ  : 7606.0
 - 54  # 赤ドラ  : 7552.0
 
-dir: ml/data/list/yaku
-train_list: ml/data/list/yaku/train.txt
-valid_list: ml/data/list/yaku/valid.txt
-eval_list: ml/data/list/yaku/eval.txt
+dir: ml/data/list/yaku_random
+train_list: ml/data/list/yaku_random/train.txt
+valid_list: ml/data/list/yaku_random/valid.txt
+eval_list: ml/data/list/yaku_random/eval.txt
 rate: [0.8, 0.1, 0.1]  # sum must be 1
 
 allow_cache: false  # Whether to allow cache in dataset. If true, it requires cpu memory
 batch_size: 128     # Batch size
-num_workers: 1     # Number of workers in Pytorch DataLoader
+num_workers: 16     # Number of workers in Pytorch DataLoader
 pin_memory: true   # Whether to pin memory in Pytorch DataLoader

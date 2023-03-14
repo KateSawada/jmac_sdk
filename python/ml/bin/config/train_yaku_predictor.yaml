@@ -16,5 +16,5 @@ hydra:
         format: '[%(asctime)s][%(levelname)s][%(module)s | %(lineno)s] %(message)s'
     disable_existing_loggers: false
 
-out_dir: out/yaku_predictor/debug    # Directory to output training results.
+out_dir: out/yaku_predictor2/debug    # Directory to output training results.
 seed: 12345  # Seed number for random numbers.

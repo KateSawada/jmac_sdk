@@ -14,4 +14,4 @@ hydra:
         format: '[%(asctime)s][%(levelname)s][%(module)s | %(lineno)s] %(message)s'
     disable_existing_loggers: false
 
-input: ml/data/npy
+input: ml/data/yaku

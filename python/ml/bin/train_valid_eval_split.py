@@ -4,6 +4,7 @@ import random
 from collections import defaultdict
 
 import hydra
+from tqdm import tqdm
 import numpy as np
 
 def dahai(input_dir, output_dir):
@@ -11,31 +12,32 @@ def dahai(input_dir, output_dir):
 
 def yaku(input_dir, output_dir, ignore, rate):
     all_rounds = glob.glob(os.path.join(os.path.abspath(input_dir), "*", "*"))
+    # all_rounds = all_rounds[:100]
     print(f"total rounds: {len(all_rounds)}")
 
     won_yaku_counts = defaultdict(list)
 
     data = []
-    for round_dir in all_rounds:
+    for round_dir in tqdm(all_rounds, desc="phase 1"):
         wins = np.load(os.path.join(round_dir, "wins.npy"))
         for p in range(4):
             if not np.all(wins[p] == 0):
                 won_yakus = np.where(wins[p] > 0)[0]
                 for i in range(len(won_yakus)):
-                    won_yaku_counts[int(won_yakus[i])] += glob.glob(os.path.join(round_dir, str(p), "*.npy"))
+                    won_yaku_counts[int(won_yakus[i])] += [round_dir]
 
     for i in ignore:
         won_yaku_counts[i] = []
     min_yaku_count = len(won_yaku_counts[1])  # 1 is 立直
 
-    for yaku_idx in won_yaku_counts.keys():
+    for yaku_idx in tqdm(won_yaku_counts.keys(), desc="phase 2"):
         if len(won_yaku_counts[yaku_idx]) > 0:
             if min_yaku_count > len(won_yaku_counts[yaku_idx]):
                 min_yaku_count = len(won_yaku_counts[yaku_idx])
             print(f"{yaku_idx} : {len(won_yaku_counts[yaku_idx])}")
     print(f"least count: {min_yaku_count}")
 
-    for yaku_idx in won_yaku_counts.keys():
+    for yaku_idx in tqdm(won_yaku_counts.keys(), desc="phase 3"):
         if len(won_yaku_counts[yaku_idx]) > 0:
             yaku_data = won_yaku_counts[yaku_idx]
             random.shuffle(yaku_data)

@@ -14,10 +14,12 @@ References:
 import os
 from logging import getLogger
 from multiprocessing import Manager
+import random
 
 import numpy as np
 from hydra.utils import to_absolute_path
 from torch.utils.data import Dataset
+from mjx import State
 
 from ml.utils import read_txt
 
@@ -68,14 +70,17 @@ class YakuDataset(Dataset):
         if self.allow_cache and len(self.caches[idx]) != 0:
             return self.caches[idx]
 
-        npy_path = os.path.abspath(self.data_list[idx])
+        data_path = os.path.abspath(self.data_list[idx])
 
 
-        yaku = np.load(os.path.join(os.path.dirname(os.path.dirname(npy_path)), "wins.npy"))
-        winner = int(os.path.basename(os.path.dirname(npy_path)))
-        won_yaku = yaku[winner]
+        yaku = np.load(os.path.join(data_path, "wins.npy"))
+        won_yaku = yaku[np.any(yaku == 1, axis=1)][0]  # extract winner's yaku array. only one winner is chosen
 
-        obs = np.load(npy_path)
+        with open(os.path.join(data_path, "state.json")) as f:
+            states = State(f.read()).past_decisions()
+
+        obs, act = random.choice(states)
+        obs = obs.to_features(feature_name="mjx-large-v0")
 
         if self.return_filename:
             items = (self.data_list[idx], obs, won_yaku)
