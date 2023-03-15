@@ -70,6 +70,7 @@ def discard_effective(hand_discards,discarded_tiles,doras,remaining_tiles):
                 if effective_list[a.tile().type()]<effective_min:
                     effective_min = effective_list[a.tile().type()]
                     best_effective_discard = a
+            # print("selected(effective): "+str(best_effective_discard.tile().type()))
             return best_effective_discard
 
 def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,after_riichi_discards_list,when_riichi):
@@ -429,10 +430,10 @@ def discard_in_riichi(who,discards,hand_discards,dealer,doras,remaining_tiles,af
             danger_min = 100000000
             danger_min_action = hand_discards[0]
             for a in hand_discards:
-                print(str(a.tile().type())+": "+str(danger_point[a.tile().type()]))
+                # print(str(a.tile().type())+": "+str(danger_point[a.tile().type()]))
                 if danger_point[a.tile().type()]<danger_min:
                     danger_min = danger_point[a.tile().type()]
                     danger_min_action = a
-            print("selected: "+str(danger_min_action.tile().type()))
+            # print("selected(in riichi): "+str(danger_min_action.tile().type()))
             
             return danger_min_action
