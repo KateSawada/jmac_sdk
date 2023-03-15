@@ -435,29 +435,32 @@ class MyAgent(CustomAgentBase):
                     remaining_agarihai_num+=self.remaining_tiles[0][a]
                 if remaining_agarihai_num==0: # アガり牌が存在しない
                     shanpon_count = 0
-                    for a in effective_draw_types:
-                        if hand[1][a]==1 and hand[2][a]==0:
-                            shanpon_count += 1
-                    if shanpon_count >=2:
-                        change_wait_discard = [a for a in legal_discards if a.tile().type() in effective_draw_types]
-                        is_discarded = True
-                        return discard(riichi,discarded_tiles,change_wait_discard,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
-                    if len(effective_discards)>0:
-                        is_discarded = True
-                        return discard(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
+                    if dangerous_situation:
+                        pass
                     else:
-                        change_wait_discard_types = []
                         for a in effective_draw_types:
-                            for e in check_effective_hai(a):
-                                if not e in change_wait_discard_types:
-                                    change_wait_discard_types.append(e)
-                        change_wait_discards = [a for a in legal_discards if a.tile().type() in change_wait_discard_types]
-                        if len(change_wait_discards)>0 and riichi[1][0]==0 and riichi[2][0]==0 and riichi[3][0]==0:
+                            if hand[1][a]==1 and hand[2][a]==0:
+                                shanpon_count += 1
+                        if shanpon_count >=2:
+                            change_wait_discard = [a for a in legal_discards if a.tile().type() in effective_draw_types]
                             is_discarded = True
-                            return discard(riichi,discarded_tiles,change_wait_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
+                            return discard(riichi,discarded_tiles,change_wait_discard,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
+                        if len(effective_discards)>0:
+                            is_discarded = True
+                            return discard(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
                         else:
-                            is_discarded = True
-                            return discard(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
+                            change_wait_discard_types = []
+                            for a in effective_draw_types:
+                                for e in check_effective_hai(a):
+                                    if not e in change_wait_discard_types:
+                                        change_wait_discard_types.append(e)
+                            change_wait_discards = [a for a in legal_discards if a.tile().type() in change_wait_discard_types]
+                            if len(change_wait_discards)>0 and riichi[1][0]==0 and riichi[2][0]==0 and riichi[3][0]==0:
+                                is_discarded = True
+                                return discard(riichi,discarded_tiles,change_wait_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
+                            else:
+                                is_discarded = True
+                                return discard(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi,dangerous_situation,is_last_round_last_rank)
                 else:
                     is_furiten = False
                     for a in effective_draw_types:
