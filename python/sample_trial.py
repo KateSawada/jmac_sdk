@@ -308,7 +308,7 @@ class MyAgent(CustomAgentBase):
                     self.remaining_tiles[1][2]=0
         
         is_last_round_last_rank = False
-        if (round[6][0]==1 and ranking[2][0]==1) or (round[4][0]==1 and tens[self.my_player_id]<=(3000+honba_num*100)) or (tens[self.my_player_id]<=(2000+honba_num*100)) or (my_rank==3 and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and round[6][0]==1 and ((-diff_ten(tens,3,4))<3900+kyotaku_num*1000+honba_num*300)):
+        if (round[6][0]==1 and ranking[2][0]==1) or (round[4][0]==1 and tens[self.my_player_id]<=(3000+honba_num*100)) or (tens[self.my_player_id]<=(2000+honba_num*100)) or (my_rank==3 and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and round[6][0]==1 and ((-diff_ten(tens,3,4))<7700+kyotaku_num*1000+honba_num*300)) or (my_rank==3 and round[6][0]==1 and ((-diff_ten(tens,3,4))<=4000)):
             is_last_round_last_rank = True
 
         after_riichi_discards_list = [[0]*34]*3
@@ -1072,17 +1072,7 @@ class MyAgent(CustomAgentBase):
                         return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
                 else:
                     return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
-            for i in yakuhai: # 既に鳴いているときは対子役牌を捨てない
-                for a in effective_discards:
-                    if a.tile().type()==i:
-                        if hand[1][i]==1 and hand[2][i]==0 and self.action_mode==ActionModeType.FURO and (not self.target_yaku in [TargetYakuType.CHINITSU_MANZU,TargetYakuType.CHINITSU_PINZU,TargetYakuType.CHINITSU_SOZU]):
-                            effective_discards.remove(a)
-            for i in yakuhai: # 暗刻で持っている役牌は捨てない
-                if (hand[2][i]==1):
-                    yakuhai_anko_discard = [a for a in legal_discards if a.tile().type() == i]
-                    for a in yakuhai_anko_discard:
-                        if a in effective_discards:
-                            effective_discards.remove(a)
+            
             # 大三元を目指すための条件
             if (hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and (hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types)):
                 if hand[0][33]==1 and self.remaining_tiles[0][33]!=0:
@@ -1160,6 +1150,17 @@ class MyAgent(CustomAgentBase):
             
             if len(effective_discards) <= 0:
                 effective_discards = [a for a in legal_discards if a.tile().type() in effective_discard_types]
+            for i in yakuhai: # 既に鳴いているときは対子役牌を捨てない
+                for a in effective_discards:
+                    if a.tile().type()==i:
+                        if hand[1][i]==1 and hand[2][i]==0 and self.action_mode==ActionModeType.FURO and (not self.target_yaku in [TargetYakuType.CHINITSU_MANZU,TargetYakuType.CHINITSU_PINZU,TargetYakuType.CHINITSU_SOZU]):
+                            effective_discards.remove(a)
+            for i in yakuhai: # 暗刻で持っている役牌は捨てない
+                if (hand[2][i]==1) and self.action_mode==ActionModeType.FURO:
+                    yakuhai_anko_discard = [a for a in legal_discards if a.tile().type() == i]
+                    for a in yakuhai_anko_discard:
+                        if a in effective_discards:
+                            effective_discards.remove(a)
 
             if self.target_yaku==TargetYakuType.CHINITSU_MANZU:
                 tinitsu_discards = [a for a in legal_discards if (a.tile().type() in pinzu) or (a.tile().type() in sozu) or (a.tile().type() in zihai)]
