@@ -785,7 +785,7 @@ class MyAgent(CustomAgentBase):
                     return pon_actions[0]
             elif count_toitsu>=2:
                 for a in toitsu_feat:
-                    if (pon_actions[0].open().last_tile().type() in effective_draw_types) and ((a in yakuhai and self.remaining_tiles[0][a] != 0 and (not a in my_discarded_tiles_types)) or self.action_mode==ActionModeType.FURO_YAKUHAI):
+                    if ((pon_actions[0].open().last_tile().type() in effective_draw_types) or (pon_actions[0].open().last_tile().type() in doras)) and ((a in yakuhai and self.remaining_tiles[0][a] != 0 and (not a in my_discarded_tiles_types)) or self.action_mode==ActionModeType.FURO_YAKUHAI):
                         if (a in yakuhai) and (self.remaining_tiles[0][a] != 0) and self.action_mode==ActionModeType.FURO:
                             return pon_actions[0]
                         if is_last_round_last_rank and (a in yakuhai) and (self.remaining_tiles[0][a] != 0) and self.action_mode!=ActionModeType.FURO_YAKUHAI:
@@ -1068,6 +1068,8 @@ class MyAgent(CustomAgentBase):
                         return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
                     elif riichi[1][0]==1 and riichi[2][0]==1 and riichi[3][0]==1 and is_having_anpai_for_all:
                         return discard_in_riichi(riichi,discarded_tiles,effective_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
+                    else:
+                        return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
                 else:
                     return discard_in_riichi(riichi,discarded_tiles,legal_discards,dealer_num,doras,self.remaining_tiles,after_riichi_discards_list,self.when_riichi)
             for i in yakuhai: # 既に鳴いているときは対子役牌を捨てない
