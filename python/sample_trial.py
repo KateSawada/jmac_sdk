@@ -380,6 +380,17 @@ class MyAgent(CustomAgentBase):
         elif anko_count==4:
             is_possible_to_aim_suanko = True
             is_possible_to_aim_suanko_tanki = True
+
+        # 国士無双を目指せるかどうか判定
+        count_kyusyu = 0
+        for i in yaotyu:
+            if hand[0][i]==1:
+                count_kyusyu += 1
+        if count_kyusyu>=9:
+            self.action_mode = ActionModeType.KOKUSHI
+            for i in yaotyu:
+                if self.remaining_tiles[0][i]==0 and hand[0][i]==0: # 牌が売り切れていたら
+                    self.action_mode = ActionModeType.MENZEN
         
         # アガれるときはアガる
         win_actions = [a for a in legal_actions if a.type() in [ActionType.TSUMO, ActionType.RON]]
@@ -412,6 +423,11 @@ class MyAgent(CustomAgentBase):
             for i in yakuhai:
                 if count_furo_list[i]>=3 or hand[2][i]==1:
                     self.action_mode = ActionModeType.FURO_YAKUHAI # 既に役がある鳴き
+        
+        # 役牌暗刻持ち、かつドラを3枚以上持っていれば鳴きを視野に入れる
+        for i in yakuhai:
+            if hand[2][i]==1 and dora_total_num>=3 and self.action_mode!=ActionModeType.KOKUSHI:
+                self.action_mode = ActionModeType.FURO_YAKUHAI
         
         adjust_by_dora = 0
         if dora_total_num>=4:
@@ -477,16 +493,6 @@ class MyAgent(CustomAgentBase):
                             return riichi_actions[0]
                     else:
                         return riichi_actions[0]
-
-        count_kyusyu = 0
-        for i in yaotyu:
-            if hand[0][i]==1:
-                count_kyusyu += 1
-        if count_kyusyu>=9:
-            self.action_mode = ActionModeType.KOKUSHI
-            for i in yaotyu:
-                if self.remaining_tiles[0][i]==0 and hand[0][i]==0: # 牌が売り切れていたら
-                    self.action_mode = ActionModeType.MENZEN
 
         # 他家の副露をカウント
         count_furo_simotya = 0
@@ -572,12 +578,6 @@ class MyAgent(CustomAgentBase):
             # 2鳴き以上, 役牌鳴き, ドラ3見え以上ならリーチ判定
         if is_yakuhai_furo_kamitya and count_dora_kamitya>=3 and count_furo_kamitya>=6:
             riichi[3][0] = 1
-        
-
-        # 役牌暗刻持ち、かつドラを3枚以上持っていれば鳴きを視野に入れる
-        for i in yakuhai:
-            if hand[2][i]==1 and dora_total_num>=3:
-                self.action_mode = ActionModeType.FURO_YAKUHAI
         
         # 混一色,清一色を目指すかどうかの判断
         manzu_counter = 0
@@ -1081,7 +1081,7 @@ class MyAgent(CustomAgentBase):
                         for a in yakuhai_discard:
                             if a in effective_discards:
                                 effective_discards.remove(a)
-
+                                legal_discards.remove(a)
             elif (hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and (hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types)):
                 if hand[0][32]==1 and self.remaining_tiles[0][32]!=0:
                     if (32 in effective_discard_types):
@@ -1089,6 +1089,7 @@ class MyAgent(CustomAgentBase):
                         for a in yakuhai_discard:
                             if a in effective_discards:
                                 effective_discards.remove(a)
+                                legal_discards.remove(a)
             elif (hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types)) and (hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types)):
                 if hand[0][31]==1 and self.remaining_tiles[0][31]!=0:
                     if (31 in effective_discard_types):
@@ -1096,6 +1097,7 @@ class MyAgent(CustomAgentBase):
                         for a in yakuhai_discard:
                             if a in effective_discards:
                                 effective_discards.remove(a)
+                                legal_discards.remove(a)
             elif ((((31 in toitsu_types) and (self.remaining_tiles[0][31]>0)) or hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and (((32 in toitsu_types) and (self.remaining_tiles[0][32]>0)) or hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types))):
                 if hand[0][33]==1 and self.remaining_tiles[0][33]!=0:
                     if (31 in effective_discard_types):
@@ -1103,16 +1105,19 @@ class MyAgent(CustomAgentBase):
                         for a in yakuhai_discard:
                             if a in effective_discards:
                                 effective_discards.remove(a)
+                                legal_discards.remove(a)
                     if (32 in effective_discard_types):
                         yakuhai_discard = [a for a in legal_discards if a.tile().type() == 32]
                         for a in yakuhai_discard:
                             if a in effective_discards:
                                 effective_discards.remove(a)
+                                legal_discards.remove(a)
                     if (33 in effective_discard_types):
                         yakuhai_discard = [a for a in legal_discards if a.tile().type() == 33]
                         for a in yakuhai_discard:
                             if a in effective_discards:
                                 effective_discards.remove(a)
+                                legal_discards.remove(a)
             elif ((((31 in toitsu_types) and (self.remaining_tiles[0][31]>0)) or hand[2][31]==1 or count_furo_list[31]>0 or (31 in self.ankan_types)) and (((33 in toitsu_types) and (self.remaining_tiles[0][33]>0)) or hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types))):
                 if hand[0][32]==1 and self.remaining_tiles[0][32]!=0:
                     if (31 in effective_discard_types):
@@ -1120,16 +1125,19 @@ class MyAgent(CustomAgentBase):
                         for a in yakuhai_discard:
                             if a in effective_discards:
                                 effective_discards.remove(a)
+                                legal_discards.remove(a)
                     if (32 in effective_discard_types):
                         yakuhai_discard = [a for a in legal_discards if a.tile().type() == 32]
                         for a in yakuhai_discard:
                             if a in effective_discards:
                                 effective_discards.remove(a)
+                                legal_discards.remove(a)
                     if (33 in effective_discard_types):
                         yakuhai_discard = [a for a in legal_discards if a.tile().type() == 33]
                         for a in yakuhai_discard:
                             if a in effective_discards:
                                 effective_discards.remove(a)
+                                legal_discards.remove(a)
             elif ((((32 in toitsu_types) and (self.remaining_tiles[0][32]>0)) or hand[2][32]==1 or count_furo_list[32]>0 or (32 in self.ankan_types)) and (((33 in toitsu_types) and (self.remaining_tiles[0][33]>0)) or hand[2][33]==1 or count_furo_list[33]>0 or (33 in self.ankan_types))):
                 if hand[0][31]==1 and self.remaining_tiles[0][31]!=0:
                     if (31 in effective_discard_types):
@@ -1137,19 +1145,20 @@ class MyAgent(CustomAgentBase):
                         for a in yakuhai_discard:
                             if a in effective_discards:
                                 effective_discards.remove(a)
+                                legal_discards.remove(a)
                     if (32 in effective_discard_types):
                         yakuhai_discard = [a for a in legal_discards if a.tile().type() == 32]
                         for a in yakuhai_discard:
                             if a in effective_discards:
                                 effective_discards.remove(a)
+                                legal_discards.remove(a)
                     if (33 in effective_discard_types):
                         yakuhai_discard = [a for a in legal_discards if a.tile().type() == 33]
                         for a in yakuhai_discard:
                             if a in effective_discards:
                                 effective_discards.remove(a)
-            
-            if len(effective_discards) <= 0:
-                effective_discards = [a for a in legal_discards if a.tile().type() in effective_discard_types]
+                                legal_discards.remove(a)
+        
             for i in yakuhai: # 既に鳴いているときは対子役牌を捨てない
                 for a in effective_discards:
                     if a.tile().type()==i:
