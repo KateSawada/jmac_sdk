@@ -410,7 +410,7 @@ class MyAgent(CustomAgentBase):
         if count_furo>0:
             self.action_mode = ActionModeType.FURO # 鳴いている
             for i in yakuhai:
-                if count_furo_list[i]>=3:
+                if count_furo_list[i]>=3 or hand[2][i]==1:
                     self.action_mode = ActionModeType.FURO_YAKUHAI # 既に役がある鳴き
         
         adjust_by_dora = 0
@@ -574,9 +574,9 @@ class MyAgent(CustomAgentBase):
             riichi[3][0] = 1
         
 
-        # 役牌暗刻持ち、かつドラを2枚以上持っていれば鳴きを視野に入れる
+        # 役牌暗刻持ち、かつドラを3枚以上持っていれば鳴きを視野に入れる
         for i in yakuhai:
-            if hand[2][i]==1 and dora_num_in_hand>=2:
+            if hand[2][i]==1 and dora_total_num>=3:
                 self.action_mode = ActionModeType.FURO_YAKUHAI
         
         # 混一色,清一色を目指すかどうかの判断
@@ -770,14 +770,14 @@ class MyAgent(CustomAgentBase):
                     return pon_actions[0]
             if (pon_actions[0].open().last_tile().type() in yakuhai) and self.action_mode==ActionModeType.FURO:
                 return pon_actions[0]
-            
+            if (my_rank==1 and round[6][0]==1 and pon_actions[0].open().last_tile().type() in yakuhai):
+                return pon_actions[0]
             count_toitsu = 0
             toitsu_feat = []
             for i in range(34):
                if hand[1][i]==1 and hand[2][i]==0:
                 count_toitsu += 1
                 toitsu_feat.append(i)
-
             if count_toitsu==1:
                 if toitsu_feat[0] in yakuhai:
                     if is_last_round_last_rank and (not self.action_mode in [ActionModeType.FURO,ActionModeType.FURO_YAKUHAI]) and (not is_possible_to_rank_up(tens,my_rank,dora_total_num,dealer_num,kyotaku,honba)):
