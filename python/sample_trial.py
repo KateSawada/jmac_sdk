@@ -316,7 +316,10 @@ class MyAgent(CustomAgentBase):
         if (round[6][0]==1 and ranking[2][0]==1) or (round[4][0]==1 and tens[self.my_player_id]<=(3000+honba_num*100)) or (tens[self.my_player_id]<=(2000+honba_num*100)) or (my_rank==3 and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and round[6][0]==1 and ((-diff_ten(tens,3,4))<7700+kyotaku_num*1000+honba_num*300)) or (my_rank==3 and round[6][0]==1 and ((-diff_ten(tens,3,4))<=4000)):
             is_last_round_last_rank = True
 
-        after_riichi_discards_list = [[0]*34]*3
+        after_riichi_discards_list_temp = [0]*34
+        after_riichi_discards_list = [[0]]*3
+        for i in range(3):
+            after_riichi_discards_list[i] = copy.copy(after_riichi_discards_list_temp)
         # リーチをした順目を記憶
         if not is_reset:
             if riichi[1][0]==1 and self.when_riichi[0]==-1:
@@ -508,13 +511,17 @@ class MyAgent(CustomAgentBase):
         win_actions = [a for a in legal_actions if a.type() in [ActionType.TSUMO, ActionType.RON]]
         if len(win_actions) >= 1:
             is_ron = False
+            is_tsumo = False
+            tsumo_action = [a for a in legal_actions if a.type()==ActionType.TSUMO]
             ron_action = [a for a in legal_actions if a.type()==ActionType.RON]
             if len(ron_action)>0:
                 is_ron = True
                 pass_action = [a for a in legal_actions if a.type() == ActionType.PASS][0]
+            if len(tsumo_action)>0:
+                is_tsumo = True
             if riichi[0][0]==1:
                 return win_actions[0]
-            elif my_rank==1 and round[6][0]==1:
+            elif my_rank==1 and round[5][0]==1:
                 return win_actions[0]
             elif self.target_yaku == TargetYakuType.TSUISO:
                 if ((manzu_counter+furo_manzu_counter==0) and (pinzu_counter+furo_pinzu_counter==0) and (sozu_counter+furo_sozu_counter==0)) or dora_total_num>=4 or self.remaining_tiles_num<25:
@@ -523,37 +530,37 @@ class MyAgent(CustomAgentBase):
                     if is_ron:
                         return pass_action
             elif self.target_yaku == TargetYakuType.HONITSU_MANZU:
-                if ((pinzu_counter+furo_pinzu_counter==0) and (sozu_counter+furo_sozu_counter==0)) or dora_total_num>=3 or self.remaining_tiles_num<35:
+                if ((pinzu_counter+furo_pinzu_counter==0) and (sozu_counter+furo_sozu_counter==0)) or dora_total_num>=3 or self.remaining_tiles_num<40:
                     return win_actions[0]
                 else:
                     if is_ron:
                         return pass_action
             elif self.target_yaku == TargetYakuType.HONITSU_PINZU:
-                if ((manzu_counter+furo_manzu_counter==0) and (sozu_counter+furo_sozu_counter==0)) or dora_total_num>=3 or self.remaining_tiles_num<35:
+                if ((manzu_counter+furo_manzu_counter==0) and (sozu_counter+furo_sozu_counter==0)) or dora_total_num>=3 or self.remaining_tiles_num<40:
                     return win_actions[0]
                 else:
                     if is_ron:
                         return pass_action
             elif self.target_yaku == TargetYakuType.HONITSU_SOZU:
-                if ((manzu_counter+furo_manzu_counter==0) and (pinzu_counter+furo_pinzu_counter==0)) or dora_total_num>=3 or self.remaining_tiles_num<35:
+                if ((manzu_counter+furo_manzu_counter==0) and (pinzu_counter+furo_pinzu_counter==0)) or dora_total_num>=3 or self.remaining_tiles_num<40:
                     return win_actions[0]
                 else:
                     if is_ron:
                         return pass_action
             elif self.target_yaku == TargetYakuType.CHINITSU_MANZU:
-                if ((pinzu_counter+furo_pinzu_counter==0) and (sozu_counter+furo_sozu_counter==0) and (zihai_counter+furo_zihai_counter==0)) or dora_total_num>=3 or self.remaining_tiles_num<35:
+                if ((pinzu_counter+furo_pinzu_counter==0) and (sozu_counter+furo_sozu_counter==0) and (zihai_counter+furo_zihai_counter==0)) or dora_total_num>=3 or self.remaining_tiles_num<40:
                     return win_actions[0]
                 else:
                     if is_ron:
                         return pass_action
             elif self.target_yaku == TargetYakuType.CHINITSU_PINZU:
-                if ((manzu_counter+furo_manzu_counter==0) and (sozu_counter+furo_sozu_counter==0) and (zihai_counter+furo_zihai_counter==0)) or dora_total_num>=3 or self.remaining_tiles_num<35:
+                if ((manzu_counter+furo_manzu_counter==0) and (sozu_counter+furo_sozu_counter==0) and (zihai_counter+furo_zihai_counter==0)) or dora_total_num>=3 or self.remaining_tiles_num<40:
                     return win_actions[0]
                 else:
                     if is_ron:
                         return pass_action
             elif self.target_yaku == TargetYakuType.CHINITSU_SOZU:
-                if ((manzu_counter+furo_manzu_counter==0) and (pinzu_counter+furo_pinzu_counter==0) and (zihai_counter+furo_zihai_counter==0)) or dora_total_num>=3 or self.remaining_tiles_num<35:
+                if ((manzu_counter+furo_manzu_counter==0) and (pinzu_counter+furo_pinzu_counter==0) and (zihai_counter+furo_zihai_counter==0)) or dora_total_num>=3 or self.remaining_tiles_num<40:
                     return win_actions[0]
                 else:
                     if is_ron:
@@ -563,14 +570,14 @@ class MyAgent(CustomAgentBase):
 
         # リーチの処理
         riichi_actions = [a for a in legal_actions if a.type() == ActionType.RIICHI]
-        if (not is_last_round_last_rank) and (((my_rank==1 and round[6][0]==1) and (not (((riichi[1][0]==1 and simotya_rank==2) or (riichi[2][0]==1 and toimen_rank==2) or (riichi[3][0]==1 and kamitya_rank==2)) and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300))
-            or ((my_rank==1 and round[6][0]==1) and (not (((riichi[1][0]==1 and simotya_rank==2) or (riichi[2][0]==1 and toimen_rank==2) or (riichi[3][0]==1 and kamitya_rank==2)) and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))) and ((riichi[1][0]==1 and simotya_rank==3) or (riichi[2][0]==1 and toimen_rank==3) or (riichi[3][0]==1 and kamitya_rank==3)) and (-diff_ten(tens,my_rank,3))>(12000+kyotaku_num*1000+honba_num*300))
-            ):
-            pass
-        elif is_possible_to_aim_suanko_tanki:
-            return riichi_actions[0]
-        else:
-            if len(riichi_actions) >= 1:
+        if len(riichi_actions) >= 1:
+            if (not is_last_round_last_rank) and (((my_rank==1 and round[6][0]==1) and (not (((riichi[1][0]==1 and simotya_rank==2) or (riichi[2][0]==1 and toimen_rank==2) or (riichi[3][0]==1 and kamitya_rank==2)) and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))) and ((riichi[1][0]==1 and simotya_rank==4) or (riichi[2][0]==1 and toimen_rank==4) or (riichi[3][0]==1 and kamitya_rank==4)) and (-diff_ten(tens,my_rank,4))>(12000+kyotaku_num*1000+honba_num*300))
+                or ((my_rank==1 and round[6][0]==1) and (not (((riichi[1][0]==1 and simotya_rank==2) or (riichi[2][0]==1 and toimen_rank==2) or (riichi[3][0]==1 and kamitya_rank==2)) and (-diff_ten(tens,my_rank,2))<(8000+kyotaku_num*1000+honba_num*300))) and ((riichi[1][0]==1 and simotya_rank==3) or (riichi[2][0]==1 and toimen_rank==3) or (riichi[3][0]==1 and kamitya_rank==3)) and (-diff_ten(tens,my_rank,3))>(12000+kyotaku_num*1000+honba_num*300))
+                ):
+                pass
+            elif is_possible_to_aim_suanko_tanki:
+                return riichi_actions[0]
+            else:
                 if self.target_yaku == TargetYakuType.TSUISO:
                     if ((manzu_counter+furo_manzu_counter==0) and (pinzu_counter+furo_pinzu_counter==0) and (sozu_counter+furo_sozu_counter==0)) or dora_total_num>=4 or self.remaining_tiles_num<40:
                         return riichi_actions[0]
