@@ -614,7 +614,7 @@ class MyAgent(CustomAgentBase):
                             for i in yaotyu:
                                 if hand[0][i]==1:
                                     count_kyusyu += 1
-                            if dora_num_in_hand>=2 or count_kyusyu>=12 or is_last_round_last_rank:
+                            if dora_total_num>=2 or count_kyusyu>=12 or is_last_round_last_rank:
                                 return riichi_actions[0]
                         else:
                             return riichi_actions[0]
