@@ -4,6 +4,7 @@ import mjx
 
 from client.client import SocketIOClient
 from client.agent import CustomAgentBase
+from ChonAgent import ChonAgent
 
 # CustomAgentBase を継承して，
 # custom_act()を編集して麻雀AIを実装してください．
@@ -26,7 +27,7 @@ class MyAgent(CustomAgentBase):
 
 if __name__ == "__main__":
     # 4人で対局する場合は，4つのSocketIOClientで同一のサーバーに接続する．
-    my_agent = MyAgent()  # 参加者が実装したプレイヤーをインスタンス化
+    my_agent = ChonAgent()  # 参加者が実装したプレイヤーをインスタンス化
 
     sio_client = SocketIOClient(
         ip='localhost',

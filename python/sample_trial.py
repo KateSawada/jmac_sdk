@@ -9,9 +9,11 @@ import random
 
 import mjx
 import mjx.agents
+from mjx.visualizer.visualizer import MahjongTable
 
 from server import convert_log
 from client.agent import CustomAgentBase
+from ChonAgent import *
 
 
 # CustomAgentBase を継承して，
@@ -38,9 +40,9 @@ def save_log(obs_dict, env, logs):
     if not os.path.exists(logdir):
         os.mkdir(logdir)
 
-    now = datetime.now().strftime('%Y%m%d%H%M%S%f')
+    now = datetime.now().strftime('%Y%m%d%H%M/%S%f')
 
-    os.mkdir(os.path.join(logdir, now))
+    os.makedirs(os.path.join(logdir, now))
     for player_id, obs in obs_dict.items():
         with open(os.path.join(logdir, now, f"{player_id}.json"), "w") as f:
             json.dump(json.loads(obs.to_json()), f)
@@ -74,7 +76,7 @@ if __name__ == "__main__":
     }
 
     agents = [
-        MyAgent(),                  # 自作Agent
+        ChonAgent(),                  # 自作Agent
         mjx.agents.ShantenAgent(),  # mjxに実装されているAgent
         mjx.agents.ShantenAgent(),  # mjxに実装されているAgent
         mjx.agents.ShantenAgent(),  # mjxに実装されているAgent
@@ -83,6 +85,8 @@ if __name__ == "__main__":
     # 卓の初期化
     env_ = mjx.MjxEnv()
     obs_dict = env_.reset()
+
+    sums = {'player_3': 0, 'player_2': 0, 'player_1': 0, 'player_0': 0}
 
     logs = convert_log.ConvertLog()
     for _ in range(n_games):
@@ -93,8 +97,18 @@ if __name__ == "__main__":
             obs_dict = env_.step(actions)
             if len(obs_dict.keys())==4:
                 logs.add_log(obs_dict)
+            if env_.done("round"):
+                print("===FINISH===")
         returns = env_.rewards()
+        sums['player_0'] += returns['player_0']
+        sums['player_1'] += returns['player_1']
+        sums['player_2'] += returns['player_2']
+        sums['player_3'] += returns['player_3']
         if logging:
             save_log(obs_dict, env_, logs)
+
+    table = MahjongTable.from_proto(env_.state().to_proto())
+    print(sums)
+    print([a.score for a in table.players])
     print("game has ended")
 
