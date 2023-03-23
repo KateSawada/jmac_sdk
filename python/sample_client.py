@@ -1,6 +1,13 @@
 import random
 
 import mjx
+from mjx.action import Action
+from mjx.const import ActionType
+from mjx.env import MjxEnv
+from mjx.observation import Observation
+from mjx.visualizer.selector import Selector
+from mjx.const import EventType, PlayerIdx, TileType
+from mjx.event import Event
 
 from client.client import SocketIOClient
 from client.agent import CustomAgentBase
