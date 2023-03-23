@@ -10,10 +10,10 @@ from mjx.const import EventType, PlayerIdx, TileType
 from mjx.event import Event
 
 import copy
-from discard import *
-from search_suzi import *
-from check_ten import is_possible_to_rank_up,diff_ten
-from action_type_def import ActionModeType,TargetYakuType
+from hirotayu_modules.discard import *
+from hirotayu_modules.search_suzi import *
+from hirotayu_modules.check_ten import is_possible_to_rank_up,diff_ten
+from hirotayu_modules.action_type_def import ActionModeType,TargetYakuType
 
 from client.client import SocketIOClient
 from client.agent import CustomAgentBase

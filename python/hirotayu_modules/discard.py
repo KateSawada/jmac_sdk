@@ -1,6 +1,6 @@
 # 状況に応じた1番良い牌を切る
 
-from search_suzi import *
+from hirotayu_modules.search_suzi import *
 
 yaotyu = [0,8,9,17,18,26,27,28,29,30,31,32,33]
 zihai = [27,28,29,30,31,32,33]
