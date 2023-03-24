@@ -15,7 +15,6 @@ class MyAgent(CustomAgentBase):
         super().__init__()
         self.round=-1
         self.honba=0
-        self.who=-1
         self.first_tsumo=True
         self.chitoitsu=False
         self.allow_pon=False
@@ -29,7 +28,6 @@ class MyAgent(CustomAgentBase):
         self.pon_pinzu=False
         self.pon_sohzu=False
         self.turn =0
-        self.done_betaori=False
         
 
     def custom_act(self, obs: mjx.Observation) -> mjx.Action:
