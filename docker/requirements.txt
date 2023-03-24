@@ -1,5 +1,8 @@
 mjx @ git+https://github.com/KateSawada/mjx-server-client.git
+torch
+pytorch_lightning
 tqdm
 python-socketio
 eventlet
 python-socketio[client]
+
