@@ -1,4 +1,3 @@
-import random
 import mjx
 from mjx import Observation, State, Action 
 import torch
@@ -33,8 +32,8 @@ class MLP(pl.LightningModule):
     
     def forward(self, x):
         return self.net(x.float())
-model2 = MLP()
-model2.load_state_dict(torch.load('model_mono.pth'))
+model = MLP()
+model.load_state_dict(torch.load('model_mono.pth'))
 class MonoAgent(CustomAgentBase):
 
     def __init__(self) -> None:
@@ -55,7 +54,7 @@ class MonoAgent(CustomAgentBase):
                 r[i]=0
         feature=np.append(feature,r)
         with torch.no_grad():
-            action_logit = model2(Tensor(feature.ravel()))
+            action_logit = model(Tensor(feature.ravel()))
         action_proba = torch.sigmoid(action_logit).numpy()
         
         # アクション決定
