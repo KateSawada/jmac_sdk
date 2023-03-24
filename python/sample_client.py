@@ -29,6 +29,7 @@ class MyAgent(CustomAgentBase):
         self.pon_pinzu=False
         self.pon_sohzu=False
         self.turn =0
+        self.done_betaori=False
         
 
     def custom_act(self, obs: mjx.Observation) -> mjx.Action:
@@ -52,6 +53,7 @@ class MyAgent(CustomAgentBase):
             self.pon_manzu=False
             self.pon_pinzu=False
             self.pon_sohzu=False
+            self.done_betaori=True
             self.turn =0
             toitsunum=0
             curr_hand=obs.MjxLargeV0().current_hand(obs)
@@ -72,12 +74,7 @@ class MyAgent(CustomAgentBase):
             return win_actions[0]
 
         if len(obs.curr_hand().closed_tiles()) in range(2,15,3):
-            print("wan")
             self.turn+=1
-            
-            if self.who==-1:
-                self.who=obs.who()
-            
             #first tsumo
             if self.first_tsumo:
                 self.first_tsumo=False
@@ -106,7 +103,7 @@ class MyAgent(CustomAgentBase):
                 elif curr_hand[3][i]==1:
                     ankan.append(i)
 
-            print("start chitoitsu")
+            
             #CHITOITSU
             if len(toitsu) >= 6:
                 self.chitoitsu=True
@@ -126,27 +123,21 @@ class MyAgent(CustomAgentBase):
             for s in single:
                 if s in self.hiyakujihai:
                     discards.append(s)
-            if self.is_effective(obs,discards):
+            if len(discards)>0:
                 return self.chosen_discard(obs,discards)
 
             for s in single:
                 if s in self.yakujihai:
                     discards.append(s)
-            if self.is_effective(obs,discards):
+            if len(discards)>0:
                 return self.chosen_discard(obs,discards)
 
             #TOITOIHO
-            print("start toitoiho")
+            
             if len(toitsu)>= 4:
                 self.allow_pon=True
                 discards=single
                 return self.chosen_discard(obs,discards)
-
-            shanten=0
-            for i in obs.MjxLargeV0().countshanten():
-                shanten+=i[0]
-            if((5-self.turn //6)>shanten):
-                return self.betaori(obs)
 
             jihai = []
             yaochuhai=[]
@@ -217,7 +208,7 @@ class MyAgent(CustomAgentBase):
             return self.chosen_discard(obs,[])
         
         else:
-            print("naki")
+            
             if not self.chitoitsu:
                 pon_actions = [
                     a
@@ -247,97 +238,36 @@ class MyAgent(CustomAgentBase):
             ]
             return pass_action[0]
 
-    def is_effective(self,obs:mjx.Observation,discards :List[int])-> bool:
-        print("is_effective")
-        effective_discard_types = obs.curr_hand().effective_discard_types()
-        for v in discards:
-            if v in effective_discard_types:
-                return True
-        return False
-
-    def chosen_discard(self, obs:mjx.Observation, discards:List[int],betaori=False) -> mjx.Action:
-        print("chosen_discard")
+    def chosen_discard(self, obs:mjx.Observation, discards:List[int]) -> mjx.Action:
+        
         legal_actions = obs.legal_actions()
         effective_discard_types = obs.curr_hand().effective_discard_types()
         legal_discards = [
             a for a in legal_actions if a.type() in [mjx.ActionType.DISCARD, mjx.ActionType.TSUMOGIRI]
         ]
 
-        under_riichis=obs.MjxLargeV0().under_riichis(obs)
-        print(under_riichis)
-        ignored_tiles=obs.MjxLargeV0().ignored_tiles(obs)
-        anpai = {}
-        print("anpai")
-        for i in range(1,3):
-            if under_riichis[i][0]== 1 or betaori:
-                print("nya")
-                for j in range(34):
-                    if ignored_tiles[i][j]==1:
-                        anpai.add(j)
-        
-
         chosen_discards = [
             a for a in legal_discards if a.tile().type() in discards
         ]
         
-        print("chosen_discardss")
+        
         if len(chosen_discards) > 0:
             chosen_effective_discards =[
                 a for a in chosen_discards if a.tile().type() in effective_discard_types
             ]
             
-            print("chosen_effective")
+            
             if len(chosen_effective_discards) > 0:
-                if(len(anpai)>0):
-                    chosen_effective_anpai_discards =[
-                        a for a in chosen_effective_discards if a.tile().type() in anpai
-                    ]
-                    
-                    print("cea")
-                    if len(chosen_effective_anpai_discards)>0:
-                        print("cea do")
-                        print(chosen_effective_anpai_discards)
-                        return random.choice(chosen_effective_anpai_discards)
-                print(chosen_effective_discards)
                 return random.choice(chosen_effective_discards)
             return random.choice(chosen_discards)
         
         effective_discards = [
             a for a in legal_discards if a.tile().type() in effective_discard_types
         ]
-        print("ed")
         if len(effective_discards) > 0:
-            if len(anpai)>0:
-                effective_anpai_discards =[
-                    a for a in effective_discards if a.tile().type() in anpai
-                ]
-                print("ea")
-                if len(effective_anpai_discards)>0:
-                    print("ea do")
-                    print( effective_anpai_discards)
-                    return random.choice(chosen_effective_anpai_discards)
             return random.choice(effective_discards)
         # if no effective tile exists, discard randomly
-        return random.choice(legal_discards)
-
-    def betaori(self,obs:mjx.Observation )->mjx.Action:
-        ignored_tiles=obs.MjxLargeV0().ignored_tiles(obs)
-        anpai = {}
-        for i in range(1,3):
-            for j in range(34):
-                if ignored_tiles[i][j]==1:
-                    anpai.add(j)
-        self.chosen_discard(obs,list(anpai))
-            
-    
-        
-
-
-
-
-
-
-    
+        return random.choice(legal_discards)    
 
     
 if __name__ == "__main__":
