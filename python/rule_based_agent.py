@@ -60,6 +60,7 @@ class RuleAgent(CustomAgentBase):
         shown_count += np.sum(features[44:48], axis=0)
         shown_count += np.sum(features[51:55], axis=0)
         shown_count += np.sum(features[58:62], axis=0)
+        shown_count += np.sum(features[69: 73], axis=0)  # dora
 
         # 鳴かれた牌は捨てた牌と副露で2重にカウントされちゃうから苦肉の策…
         shown_count = np.where(shown_count > 4, 4, shown_count)
