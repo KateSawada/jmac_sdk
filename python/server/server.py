@@ -102,10 +102,10 @@ class SocketIOServer:
 
         # 卓の初期化
         env_ = self.envs[room_id]
+        obs_dict = env_.reset()
+        logs = convert_log.ConvertLog()
 
         while not env_.done():
-            obs_dict = env_.reset()
-            logs = convert_log.ConvertLog()
             actions = {}
             for player_id, obs in obs_dict.items():
                 if self.is_solo:
@@ -124,9 +124,9 @@ class SocketIOServer:
         print("game has ended")
         self.clients.pop(room_id)
         self.envs.pop(room_id)
-
-        # 対局終了時にログを保存
-
+        exit()
+        
+    # 対局終了時にログを保存
     def save_log(self, obs_dict, env, logs):
         logdir = "logs"
         if not os.path.exists(logdir):
