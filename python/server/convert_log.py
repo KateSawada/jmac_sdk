@@ -151,9 +151,9 @@ class ConvertLog:
 						open_tile = list(range(pon_base,pon_base+4))
 						added_tile=open_tile.pop(pon_unused_offset)
 						stolen_tile = open_tile.pop(stolen)
-						open_tile.append(added_tile)
+						open_tile.append(stolen_tile)
 						open_tile = [str(convert_id(id)) for id in open_tile]
-						open_tile.insert(3-mask_from,'k'+str(convert_id(stolen_tile)))
+						open_tile.insert(3-mask_from,'k'+str(convert_id(added_tile)))
 						log[4+who*3+2].append(''.join(open_tile))
 
 					elif event["type"]=="EVENT_TYPE_OPEN_KAN":
