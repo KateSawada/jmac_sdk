@@ -48,7 +48,8 @@ class ConvertLog:
 				else:
 					for win in obs["roundTerminal"]["wins"]:
 						if "uraDoraIndicators" in win.keys():
-							log[3] = win["uraDoraIndicators"]
+							for uradora in win["uraDoraIndicators"]:
+								log[3].append(convert_id(uradora))
 						who_win = win["who"] if "who" in win.keys() else 0
 						from_who_win = win["fromWho"] if "fromWho" in win.keys() else 0
 						agari_info=[who_win,from_who_win,who_win]
