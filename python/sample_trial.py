@@ -82,10 +82,9 @@ if __name__ == "__main__":
 
     # 卓の初期化
     env_ = mjx.MjxEnv()
-    obs_dict = env_.reset()
-
-    logs = convert_log.ConvertLog()
     for _ in range(n_games):
+        obs_dict = env_.reset()
+        logs = convert_log.ConvertLog()
         while not env_.done():
             actions = {}
             for player_id, obs in obs_dict.items():
