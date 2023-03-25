@@ -140,7 +140,11 @@ class SocketIOClient:
         p.start()
 
     def enter_room(self):
-        self.sio_.emit('enter_room', self.room_id, namespace = self.namespace_, ) # ルームIDを指定して入室
+        data = {
+            'room_id': self.room_id,
+            'player_name': self.player_name,
+        }
+        self.sio_.emit('enter_room', data=data, namespace = self.namespace_, ) # ルームIDを指定して入室
 
 
 class RandomAgent(mjx.Agent):

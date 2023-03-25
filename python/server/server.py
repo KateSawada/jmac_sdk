@@ -75,17 +75,32 @@ class SocketIOServer:
         print('Received message %s', str(data))
         self.emit_data({'test_ack': 'emit_from_server'})
 
-    def on_enter_room(self, sid, room_id):
+    def on_enter_room(self, sid, data):
         """クライアントがルームに入った時の処理
 
         Args:
             sid (str): client sid
             room_id (str): room id
         """
+        room_id = data['room_id']
+        player_name = data['player_name']
+
+        # プレイヤーの名前を登録
+        if room_id not in self.player_names.keys():
+            self.player_names[room_id] = {}
+        self.player_names[room_id][sid] = player_name 
+        print(self.player_names[room_id][sid])
+
         self.Namespace.enter_room(sid, room_id)
         if room_id not in self.clients.keys():
             self.clients[room_id] = []
         self.clients[room_id].append(sid)
+        if (len(self.clients[room_id]) == self.n_start_players):
+            self.envs[room_id] = mjx.MjxEnv()
+            self.play(room_id)  # TODO: バックグラウンド処理に流したい
+
+
+
         if (len(self.clients[room_id]) == self.n_start_players):
             self.envs[room_id] = mjx.MjxEnv()
             self.play(room_id)  # TODO: バックグラウンド処理に流したい
@@ -165,6 +180,7 @@ class SocketIOServer:
         self.sio_.register_namespace(self.Namespace)
         self.clients = {}
         self.envs = {}
+        self.player_names = {}
     # 接続確認
     def isConnect(self):
         return self.is_connect_
