@@ -121,11 +121,29 @@ class SocketIOServer:
         returns = env_.rewards()
         if self.logging:
             self.save_log(obs_dict, env_, logs)
+            j = json.loads(env_.state().to_json())
+            player_names = j['publicObservation']['playerIds']
+            scores = j['roundTerminal']['finalScore']['tens']
+
+            # scores, player_names = zip(*sorted(zip(scores, player_names), reverse=True))
+
+            with open("result.csv", "a") as f:
+                for i in range(len(player_names)):
+                    f.write(player_names[i])
+                    f.write(", ")
+                    f.write(str(scores[i]))
+                    f.write(", ")
+                f.write("\n")
+
+        if self.is_solo:
+            self.disconnect(players[0])
+        else:
+            for i in range(4):
+                self.disconnect(players[i])
         print("game has ended")
         self.clients.pop(room_id)
         self.envs.pop(room_id)
-        exit()
-        
+
     # 対局終了時にログを保存
     def save_log(self, obs_dict, env, logs):
         logdir = "logs"
