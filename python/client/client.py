@@ -64,7 +64,7 @@ class SocketIOClient:
         self.Namespace.on_server_to_client = self.on_server_to_client
         self.Namespace.on_ask_act = self.on_ask_act
     # 初期化
-    def __init__(self,ip,port,namespace,query,agent,room_id):
+    def __init__(self,ip,port,namespace,query,agent,room_id,player_name):
         self.ip_         = ip
         self.port_       = port
         self.namespace_  = namespace
@@ -76,6 +76,7 @@ class SocketIOClient:
         self.sio_.register_namespace(self.Namespace)
         self.agent = agent
         self.room_id = room_id
+        self.player_name = player_name
     # 接続確認
     def isConnect(self):
         return self.is_connect_
@@ -139,7 +140,11 @@ class SocketIOClient:
         p.start()
 
     def enter_room(self):
-        self.sio_.emit('enter_room', self.room_id, namespace = self.namespace_, ) # ルームIDを指定して入室
+        data = {
+            'room_id': self.room_id,
+            'player_name': self.player_name,
+        }
+        self.sio_.emit('enter_room', data=data, namespace = self.namespace_, ) # ルームIDを指定して入室
 
 
 class RandomAgent(mjx.Agent):
