@@ -1,0 +1,52 @@
+type: yaku
+ignore:
+- 0  # "門前清自摸和"
+- 2  # 一発  : 1423.0
+- 3  # 槍槓  : 2.0
+- 4  # 嶺上開花  : 29.0
+- 5  # 海底摸月  : 82.0
+- 6  # 河底撈魚  : 98.0
+- 16  # 場風 西  : 10.0
+- 17  # 場風 北  : 0.0
+- 21  # 両立直  : 31.0
+- 23  # 混全帯幺九  : 141.0
+- 24  # 一気通貫  : 247.0
+- 26  # 三色同刻  : 4.0
+- 27  # 三槓子  : 0.0
+- 28  # 対々和  : 262.0
+- 29  # 三暗刻  : 112.0
+- 30  # 小三元  : 13.0
+- 31  # 混老頭  : 6.0
+- 32  # 二盃口  : 6.0
+- 33  # 純全帯幺九  : 50.0
+- 35  # 清一色  : 77.0
+- 36  # 人和  : 0.0
+- 37  # 天和  : 0.0
+- 38  # 地和  : 0.0
+- 39  # 大三元  : 0.0
+- 40  # 四暗刻  : 0.0
+- 41  # 四暗刻単騎  : 0.0
+- 42  # 字一色  : 0.0
+- 43  # 緑一色  : 0.0
+- 44  # 清老頭  : 0.0
+- 45  # 九蓮宝燈  : 0.0
+- 46  # 純正九蓮宝燈  : 0.0
+- 47  # 国士無双  : 0.0
+- 48  # 国士無双１３面  : 0.0
+- 49  # 大四喜  : 0.0
+- 50  # 小四喜  : 0.0
+- 51  # 四槓子  : 0.0
+- 52  # ドラ  : 6799.0
+- 53  # 裏ドラ  : 7606.0
+- 54  # 赤ドラ  : 7552.0
+
+dir: ml/data/list/yaku_random
+train_list: ml/data/list/yaku_random/train.txt
+valid_list: ml/data/list/yaku_random/valid.txt
+eval_list: ml/data/list/yaku_random/eval.txt
+rate: [0.8, 0.1, 0.1]  # sum must be 1
+
+allow_cache: false  # Whether to allow cache in dataset. If true, it requires cpu memory
+batch_size: 128     # Batch size
+num_workers: 16     # Number of workers in Pytorch DataLoader
+pin_memory: true   # Whether to pin memory in Pytorch DataLoader

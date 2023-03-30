@@ -1,0 +1,10 @@
+_target_: ml.models.YakuPredictor
+dense_dims:
+- 144
+- 512
+- 512
+- 256
+- 256
+- 256
+- 64
+- 16

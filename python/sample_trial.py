@@ -13,6 +13,8 @@ import mjx.agents
 from server import convert_log
 from client.agent import CustomAgentBase
 
+from rule_based_agent import RuleAgent
+
 
 # CustomAgentBase を継承して，
 # custom_act()を編集して麻雀AIを実装してください．
@@ -74,10 +76,18 @@ if __name__ == "__main__":
     }
 
     agents = [
-        MyAgent(),                  # 自作Agent
-        mjx.agents.ShantenAgent(),  # mjxに実装されているAgent
-        mjx.agents.ShantenAgent(),  # mjxに実装されているAgent
-        mjx.agents.ShantenAgent(),  # mjxに実装されているAgent
+        RuleAgent(),                  # 自作Agent
+        RuleAgent(),                  # 自作Agent
+        RuleAgent(),                  # 自作Agent
+        RuleAgent(),                  # 自作Agent
+        # RuleAgent(),                  # 自作Agent
+        # RuleAgent(),                  # 自作Agent
+        # RuleAgent(),                  # 自作Agent
+        # mjx.agents.ShantenAgent(),  # mjxに実装されているAgent
+        # mjx.agents.ShantenAgent(),  # mjxに実装されているAgent
+        # mjx.agents.ShantenAgent(),  # mjxに実装されているAgent
+        # mjx.agents.RandomAgent(),
+        # mjx.agents.TsumogiriAgent(),
         ]
 
     # 卓の初期化
