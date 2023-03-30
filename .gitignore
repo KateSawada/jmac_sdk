@@ -1,1 +1,5 @@
 .DS_Store
+./lightning_logs
+json
+/python/obs.npy
+/python/actions.npy

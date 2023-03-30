@@ -6,31 +6,71 @@ import os
 from datetime import datetime
 import json
 import random
-
+import torch
 import mjx
+from torch import optim, nn, utils, Tensor
+import pytorch_lightning as pl
 import mjx.agents
 
 from server import convert_log
 from client.agent import CustomAgentBase
-
-
 # CustomAgentBase を継承して，
-# custom_act()を編集して麻雀AIを実装してください．
+# custom_act()を編集して麻雀AIを実装してください．import random
+
+
+class MLP(pl.LightningModule):
+    def __init__(self, obs_size=544, n_actions=181, hidden_size=544):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(obs_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, hidden_size),
+            nn.ReLU(),
+            nn.Linear(hidden_size, n_actions),
+        )
+        self.loss_module = nn.CrossEntropyLoss()
+
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        preds = self.forward(x)
+        loss = self.loss_module(preds, y)
+        self.log("train_loss", loss)
+        return loss
+    
+    def configure_optimizers(self):
+        optimizer = optim.Adam(self.parameters(), lr=1e-3)
+        return optimizer
+
+    def forward(self, x):
+        return self.net(x.float())
+
+model = MLP()
+model.load_state_dict(torch.load('./model_0.pth'))
+
 class MyAgent(CustomAgentBase):
-    def __init__(self):
+
+    def __init__(self) -> None:
         super().__init__()
 
     def custom_act(self, obs: mjx.Observation) -> mjx.Action:
-        """盤面情報と取れる行動を受け取って，行動を決定して返す関数．参加者が各自で実装．
+        legal_actions = obs.legal_actions()
+        if len(legal_actions) == 1:
+            return legal_actions[0]
+        
+        for action in legal_actions:
+            if action.type() in [mjx.ActionType.TSUMO, mjx.ActionType.RON]:
+                return action
+            elif action.type() == mjx.ActionType.RIICHI:
+                return action
 
-        Args:
-            obs (mjx.Observation): 盤面情報と取れる行動(obs.legal_actions())
-
-        Returns:
-            mjx.Action: 実際に取る行動
-        """
-        # ランダムに取れる行動をする
-        return random.choice(obs.legal_actions())
+        feature = obs.to_features(feature_name="mjx-small-v0")
+        with torch.no_grad():
+            action_logit = model(Tensor(feature.ravel()))
+        action_proba = torch.sigmoid(action_logit).numpy()
+        
+        mask = obs.action_mask()
+        action_idx = (mask * action_proba).argmax()
+        return mjx.Action.select_from(action_idx, legal_actions)
 
 
 def save_log(obs_dict, env, logs):

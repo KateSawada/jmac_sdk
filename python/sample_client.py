@@ -16,10 +16,11 @@ class MyAgent(CustomAgentBase):
 
         Args:
             obs (mjx.Observation): 盤面情報と取れる行動(obs.legal_actions())
-
         Returns:
             mjx.Action: 実際に取る行動
         """
+        print(obs)
+        print(obs.legal_actions())
         # ランダムに取れる行動をする
         return random.choice(obs.legal_actions())
 
