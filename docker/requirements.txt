@@ -3,3 +3,9 @@ tqdm
 python-socketio
 eventlet
 python-socketio[client]
+matplotlib
+seaborn
+torch
+pytorch_lightning
+tensorboard
+gym

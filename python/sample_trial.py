@@ -2,16 +2,15 @@
 """
 
 import argparse
-import os
-from datetime import datetime
 import json
+import os
 import random
+from datetime import datetime
 
 import mjx
 import mjx.agents
-
-from server import convert_log
 from client.agent import CustomAgentBase
+from server import convert_log
 
 
 # CustomAgentBase を継承して，
@@ -66,7 +65,7 @@ if __name__ == "__main__":
     logging = args.log
     n_games = args.number
 
-    player_names_to_idx ={
+    player_names_to_idx = {
         "player_0": 0,
         "player_1": 1,
         "player_2": 2,
@@ -78,7 +77,7 @@ if __name__ == "__main__":
         mjx.agents.ShantenAgent(),  # mjxに実装されているAgent
         mjx.agents.ShantenAgent(),  # mjxに実装されているAgent
         mjx.agents.ShantenAgent(),  # mjxに実装されているAgent
-        ]
+    ]
 
     # 卓の初期化
     env_ = mjx.MjxEnv()
@@ -88,12 +87,12 @@ if __name__ == "__main__":
         while not env_.done():
             actions = {}
             for player_id, obs in obs_dict.items():
-                actions[player_id] = agents[player_names_to_idx[player_id]].act(obs)
+                actions[player_id] = agents[player_names_to_idx[player_id]].act(
+                    obs)
             obs_dict = env_.step(actions)
-            if len(obs_dict.keys())==4:
+            if len(obs_dict.keys()) == 4:
                 logs.add_log(obs_dict)
         returns = env_.rewards()
         if logging:
             save_log(obs_dict, env_, logs)
     print("game has ended")
-
